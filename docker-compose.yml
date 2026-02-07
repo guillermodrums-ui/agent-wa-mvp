@@ -1,0 +1,11 @@
+services:
+  agent:
+    build: .
+    ports:
+      - "7070:7070"
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app/app
+      - ./config:/app/config
+      - ./data/chroma:/app/data/chroma
