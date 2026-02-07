@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - Base de Conocimiento</title>
+<title>Admin - La Fórmula</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -39,7 +39,7 @@ body {
   justify-content: space-between;
   padding: 16px 0;
   border-bottom: 1px solid var(--wa-border);
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .header h1 { font-size: 20px; font-weight: 500; }
@@ -50,6 +50,39 @@ body {
   font-size: 14px;
 }
 .header a:hover { text-decoration: underline; }
+
+/* --- TABS --- */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--wa-border);
+  margin-bottom: 24px;
+}
+
+.tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  color: var(--wa-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab:hover { color: var(--wa-text); }
+.tab.active {
+  color: var(--wa-green);
+  border-bottom-color: var(--wa-green);
+}
+
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
 
 /* --- SECTIONS --- */
 .section {
@@ -160,6 +193,33 @@ input[type="file"] {
 }
 .btn-danger:hover { background: rgba(245,101,101,0.1); }
 
+/* --- PROMPT EDITOR --- */
+.prompt-textarea {
+  min-height: 300px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 4;
+}
+
+.prompt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.prompt-status {
+  font-size: 12px;
+  color: var(--wa-text-secondary);
+}
+.prompt-status.unsaved {
+  color: #f6ad55;
+}
+.prompt-status.saved {
+  color: var(--wa-green);
+}
+
 /* --- DOCUMENTS LIST --- */
 .docs-section {
   background: var(--wa-sidebar);
@@ -248,98 +308,185 @@ input[type="file"] {
 @media (max-width: 600px) {
   .container { padding: 12px; }
   .form-row { flex-direction: column; }
+  .tab { padding: 10px 16px; font-size: 13px; }
 }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>Base de Conocimiento</h1>
+    <h1>Panel de Administracion</h1>
     <a href="/">&#8592; Volver al Chat</a>
   </div>
 
-  <!-- Upload PDF -->
-  <div class="section">
-    <h2>Subir PDF</h2>
-    <p class="desc">Subir catalogo, lista de precios, o cualquier documento PDF. Se extrae el texto y se indexa automaticamente.</p>
-    <div class="form-row">
-      <label class="file-label" id="pdfLabel" for="pdfInput">Seleccionar PDF...</label>
-      <input type="file" id="pdfInput" accept=".pdf" onchange="updateFileLabel('pdfInput','pdfLabel')">
-      <button class="btn btn-primary" onclick="uploadPdf()">Subir</button>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="personalidad" onclick="switchTab('personalidad')">Personalidad</button>
+    <button class="tab" data-tab="conocimiento" onclick="switchTab('conocimiento')">Conocimiento</button>
+  </div>
+
+  <!-- TAB: PERSONALIDAD -->
+  <div class="tab-content active" id="tab-personalidad">
+    <div class="section">
+      <h2>Prompt del Agente</h2>
+      <p class="desc">Este es el "cerebro" de Nico. Edita las reglas, el tono, los descuentos, y como se comporta. Los cambios se aplican al instante en las proximas conversaciones.</p>
+      <div class="form-row vertical">
+        <div>
+          <textarea id="systemPrompt" class="prompt-textarea" placeholder="Cargando prompt..."></textarea>
+        </div>
+        <div class="prompt-footer">
+          <span class="prompt-status" id="promptStatus">Sin cambios</span>
+          <button class="btn btn-primary" id="btnSavePrompt" onclick="savePrompt()" disabled>Guardar cambios</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Audio transcript -->
-  <div class="section">
-    <h2>Transcripcion de audio</h2>
-    <p class="desc">Pegar la transcripcion de un audio de un cliente. Esto le da contexto al agente sobre como hablan los clientes.</p>
-    <div class="form-row vertical">
-      <div>
-        <label>Titulo</label>
-        <input type="text" id="audioTitle" placeholder="Ej: Audio cliente Juan - consulta creatina">
+  <!-- TAB: CONOCIMIENTO -->
+  <div class="tab-content" id="tab-conocimiento">
+    <!-- Upload PDF -->
+    <div class="section">
+      <h2>Subir PDF</h2>
+      <p class="desc">Subir catalogo, lista de precios, o cualquier documento PDF. Se extrae el texto y se indexa automaticamente.</p>
+      <div class="form-row">
+        <label class="file-label" id="pdfLabel" for="pdfInput">Seleccionar PDF...</label>
+        <input type="file" id="pdfInput" accept=".pdf" onchange="updateFileLabel('pdfInput','pdfLabel')">
+        <button class="btn btn-primary" onclick="uploadPdf()">Subir</button>
       </div>
-      <div>
-        <label>Transcripcion</label>
-        <textarea id="audioText" placeholder="Ej: Hola Mauri, te queria consultar por la creatina, estoy entrenando hace 3 meses..."></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="addAudioTranscript()" style="align-self:flex-end;">Guardar</button>
     </div>
-  </div>
 
-  <!-- Chat export -->
-  <div class="section">
-    <h2>Importar chat de WhatsApp</h2>
-    <p class="desc">Pegar un export de chat de WhatsApp. El agente aprende del historial de conversaciones reales.</p>
-    <div class="form-row vertical">
-      <div>
-        <label>Titulo</label>
-        <input type="text" id="chatTitle" placeholder="Ej: Chat con cliente Maria - febrero 2025">
+    <!-- Audio transcript -->
+    <div class="section">
+      <h2>Transcripcion de audio</h2>
+      <p class="desc">Pegar la transcripcion de un audio de un cliente. Esto le da contexto al agente sobre como hablan los clientes.</p>
+      <div class="form-row vertical">
+        <div>
+          <label>Titulo</label>
+          <input type="text" id="audioTitle" placeholder="Ej: Audio cliente Juan - consulta creatina">
+        </div>
+        <div>
+          <label>Transcripcion</label>
+          <textarea id="audioText" placeholder="Ej: Hola Mauri, te queria consultar por la creatina, estoy entrenando hace 3 meses..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addAudioTranscript()" style="align-self:flex-end;">Guardar</button>
       </div>
-      <div>
-        <label>Export del chat</label>
-        <textarea id="chatText" placeholder="6/2/25, 10:30 - Juan: Hola, tienen creatina?&#10;6/2/25, 10:31 - Mauri: Si! Tenemos monohidrato de 300g..."></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="addChatExport()" style="align-self:flex-end;">Importar</button>
     </div>
-  </div>
 
-  <!-- Free notes -->
-  <div class="section">
-    <h2>Nota libre</h2>
-    <p class="desc">Agregar cualquier informacion adicional: FAQ, politicas, horarios, datos del negocio, etc.</p>
-    <div class="form-row vertical">
-      <div>
-        <label>Titulo</label>
-        <input type="text" id="noteTitle" placeholder="Ej: Horarios de atencion">
+    <!-- Chat export -->
+    <div class="section">
+      <h2>Importar chat de WhatsApp</h2>
+      <p class="desc">Pegar un export de chat de WhatsApp. El agente aprende del historial de conversaciones reales.</p>
+      <div class="form-row vertical">
+        <div>
+          <label>Titulo</label>
+          <input type="text" id="chatTitle" placeholder="Ej: Chat con cliente Maria - febrero 2025">
+        </div>
+        <div>
+          <label>Export del chat</label>
+          <textarea id="chatText" placeholder="6/2/25, 10:30 - Juan: Hola, tienen creatina?&#10;6/2/25, 10:31 - Mauri: Si! Tenemos monohidrato de 300g..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addChatExport()" style="align-self:flex-end;">Importar</button>
       </div>
-      <div>
-        <label>Contenido</label>
-        <textarea id="noteText" placeholder="Ej: Atendemos de lunes a viernes de 9 a 18hs. Sabados de 9 a 13hs..."></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="addNote()" style="align-self:flex-end;">Guardar</button>
     </div>
-  </div>
 
-  <!-- Documents list -->
-  <div class="docs-section">
-    <h2>Documentos indexados <span class="doc-count" id="docCount">0</span></h2>
-    <ul class="doc-list" id="docList">
-      <li class="empty-docs">No hay documentos. Subi archivos para que Nico los use como contexto.</li>
-    </ul>
+    <!-- Free notes -->
+    <div class="section">
+      <h2>Nota libre</h2>
+      <p class="desc">Agregar cualquier informacion adicional: FAQ, politicas, horarios, datos del negocio, etc.</p>
+      <div class="form-row vertical">
+        <div>
+          <label>Titulo</label>
+          <input type="text" id="noteTitle" placeholder="Ej: Horarios de atencion">
+        </div>
+        <div>
+          <label>Contenido</label>
+          <textarea id="noteText" placeholder="Ej: Atendemos de lunes a viernes de 9 a 18hs. Sabados de 9 a 13hs..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addNote()" style="align-self:flex-end;">Guardar</button>
+      </div>
+    </div>
+
+    <!-- Documents list -->
+    <div class="docs-section">
+      <h2>Documentos indexados <span class="doc-count" id="docCount">0</span></h2>
+      <ul class="doc-list" id="docList">
+        <li class="empty-docs">No hay documentos. Subi archivos para que Nico los use como contexto.</li>
+      </ul>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// --- TABS ---
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+// --- PROMPT EDITOR ---
+let originalPrompt = '';
+
+async function loadPrompt() {
+  try {
+    const res = await fetch('/api/config/prompt');
+    const data = await res.json();
+    const textarea = document.getElementById('systemPrompt');
+    textarea.value = data.system_prompt;
+    originalPrompt = data.system_prompt;
+    updatePromptStatus();
+  } catch (e) {
+    console.error('Failed to load prompt:', e);
+  }
+}
+
+async function savePrompt() {
+  const text = document.getElementById('systemPrompt').value;
+  if (!text.trim()) return showToast('El prompt no puede estar vacio', 'error');
+
+  try {
+    const res = await fetch('/api/config/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system_prompt: text }),
+    });
+    if (!res.ok) throw new Error();
+    originalPrompt = text;
+    updatePromptStatus();
+    showToast('Prompt actualizado. Los cambios ya estan activos.');
+  } catch (e) {
+    showToast('Error al guardar el prompt', 'error');
+  }
+}
+
+function updatePromptStatus() {
+  const textarea = document.getElementById('systemPrompt');
+  const status = document.getElementById('promptStatus');
+  const btn = document.getElementById('btnSavePrompt');
+  const changed = textarea.value !== originalPrompt;
+
+  if (changed) {
+    status.textContent = 'Cambios sin guardar';
+    status.className = 'prompt-status unsaved';
+    btn.disabled = false;
+  } else {
+    status.textContent = 'Sin cambios';
+    status.className = 'prompt-status';
+    btn.disabled = true;
+  }
+}
+
+// --- KNOWLEDGE BASE ---
 const TYPE_ICONS = {
-  pdf: '📄', audio_transcript: '🎤', chat_history: '💬', note: '📝'
+  pdf: '\u{1F4C4}', audio_transcript: '\u{1F3A4}', chat_history: '\u{1F4AC}', note: '\u{1F4DD}'
 };
 const TYPE_LABELS = {
   pdf: 'PDF', audio_transcript: 'Audio', chat_history: 'Chat WA', note: 'Nota'
 };
 
-// --- File label ---
 function updateFileLabel(inputId, labelId) {
   const input = document.getElementById(inputId);
   const label = document.getElementById(labelId);
@@ -474,7 +621,7 @@ async function loadDocuments() {
     list.innerHTML = docs.map(d => `
       <li class="doc-item">
         <div class="doc-info">
-          <div class="doc-icon">${TYPE_ICONS[d.doc_type] || '📄'}</div>
+          <div class="doc-icon">${TYPE_ICONS[d.doc_type] || '\u{1F4C4}'}</div>
           <div class="doc-meta">
             <div class="name">${escapeHtml(d.filename)}</div>
             <div class="detail">${TYPE_LABELS[d.doc_type] || d.doc_type} &middot; ${d.chunk_count} fragmentos</div>
@@ -494,7 +641,9 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Init
+// --- INIT ---
+document.getElementById('systemPrompt').addEventListener('input', updatePromptStatus);
+loadPrompt();
 loadDocuments();
 </script>
 </body>

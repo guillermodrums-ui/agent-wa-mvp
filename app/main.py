@@ -4,6 +4,7 @@ import random
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from app.config import load_client_config, OPENROUTER_API_KEY
 from app.models import ChatMessage, ChatSession, SendMessageRequest, NewSessionRequest
@@ -20,7 +21,7 @@ kb = KnowledgeBase(persist_dir="data/chroma")
 # In-memory session storage
 sessions: dict[str, ChatSession] = {}
 
-app = FastAPI(title="Mauri Fitness - WhatsApp Agent MVP")
+app = FastAPI(title="La Fórmula - WhatsApp Agent MVP")
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -47,6 +48,25 @@ async def get_config():
         "agent_name": client_config["agent"]["name"],
         "description": client_config["business"]["description"],
     }
+
+
+# --- Prompt (in-memory) ---
+
+@app.get("/api/config/prompt")
+async def get_prompt():
+    return {"system_prompt": agent.system_prompt}
+
+
+class UpdatePromptRequest(BaseModel):
+    system_prompt: str
+
+
+@app.post("/api/config/prompt")
+async def update_prompt(req: UpdatePromptRequest):
+    if not req.system_prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+    agent.system_prompt = req.system_prompt
+    return {"ok": True}
 
 
 # --- Sessions ---
