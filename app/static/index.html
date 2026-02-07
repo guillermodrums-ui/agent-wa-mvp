@@ -394,6 +394,129 @@ body {
 @media (min-width: 769px) {
   .chat-header .btn-back { display: none; }
 }
+
+/* --- DEBUG VIEWER --- */
+.debug-toggle {
+  font-size: 11px;
+  opacity: 0.6;
+  color: var(--wa-text-secondary);
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+}
+.debug-toggle:hover { opacity: 1; }
+
+.debug-panel {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid var(--wa-border);
+}
+.debug-panel.open { display: block; }
+
+.debug-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 10px;
+}
+.debug-details .item { color: var(--wa-text-secondary); }
+.debug-details .item strong { color: var(--wa-text); margin-right: 4px; }
+
+.debug-section-toggle {
+  cursor: pointer;
+  color: var(--wa-green);
+  font-size: 12px;
+  margin: 8px 0 6px 0;
+}
+.debug-section-toggle:hover { text-decoration: underline; }
+
+.debug-raw {
+  margin-top: 6px;
+}
+.debug-raw pre {
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.debug-chunk {
+  background: rgba(0,0,0,0.2);
+  border-left: 3px solid var(--wa-green);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 0 6px 6px 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.debug-chunk .chunk-meta {
+  color: var(--wa-text-secondary);
+  margin-bottom: 4px;
+}
+.debug-chunk .chunk-text { white-space: pre-wrap; word-break: break-word; }
+
+/* --- PROMPT CONTEXT (per session) --- */
+.context-block {
+  padding: 10px 16px;
+  background: var(--wa-header);
+  border-bottom: 1px solid var(--wa-border);
+  font-size: 13px;
+}
+.context-toggle {
+  cursor: pointer;
+  color: var(--wa-green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.context-toggle:hover { text-decoration: underline; }
+.context-toggle .arrow { transition: transform 0.2s; }
+.context-block.open .context-toggle .arrow { transform: rotate(90deg); }
+.context-panel {
+  display: none;
+  margin-top: 10px;
+}
+.context-block.open .context-panel { display: block; }
+.context-panel textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 13px;
+  resize: vertical;
+  font-family: inherit;
+  outline: none;
+}
+.context-panel textarea:focus { border-color: var(--wa-green); }
+.context-panel .context-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+.context-panel .btn-save-ctx {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.context-panel .btn-save-ctx:hover { background: var(--wa-hover); }
 </style>
 </head>
 <body>
@@ -425,6 +548,19 @@ body {
         <div class="info">
           <div class="name" id="chatAgentName">Nico - La Fórmula</div>
           <div class="status" id="chatStatus">en línea</div>
+        </div>
+      </div>
+
+      <div class="context-block" id="contextBlock">
+        <div class="context-toggle" onclick="toggleContextPanel()">
+          <span class="arrow">▶</span>
+          <span id="contextToggleLabel">Contexto para Nico</span>
+        </div>
+        <div class="context-panel">
+          <textarea id="promptContextInput" placeholder="Info extra para esta sesion (ej: cliente es Juan, prefiere tuteo; hoy hay 10% en creatina)."></textarea>
+          <div class="context-actions">
+            <button type="button" class="btn-save-ctx" onclick="saveSessionPromptContext()">Guardar</button>
+          </div>
         </div>
       </div>
 
@@ -477,6 +613,7 @@ async function init() {
     document.getElementById('businessName').textContent = config.business_name;
     document.getElementById('agentNameEmpty').textContent = config.agent_name;
     document.getElementById('chatAgentName').textContent = `${config.agent_name} - ${config.business_name}`;
+    document.getElementById('contextToggleLabel').textContent = `Contexto para ${config.agent_name}`;
   } catch (e) {
     console.error('Config load failed:', e);
   }
@@ -520,10 +657,32 @@ async function selectSession(sessionId) {
   const item = document.querySelector(`[data-session="${sessionId}"]`);
   if (item) item.classList.add('active');
 
-  // Load messages
+  // Load messages and prompt context for this session
   const session = await api(`/api/sessions/${sessionId}`);
   renderMessages(session.messages);
+  document.getElementById('promptContextInput').value = session.prompt_context || '';
   document.getElementById('messageInput').focus();
+}
+
+function toggleContextPanel() {
+  document.getElementById('contextBlock').classList.toggle('open');
+}
+
+function getPromptContext() {
+  return (document.getElementById('promptContextInput').value || '').trim();
+}
+
+async function saveSessionPromptContext() {
+  if (!currentSessionId) return;
+  const text = getPromptContext();
+  try {
+    await api(`/api/sessions/${currentSessionId}/prompt-context`, {
+      method: 'PUT',
+      body: JSON.stringify({ prompt_context: text }),
+    });
+  } catch (e) {
+    console.error('Error saving prompt context:', e);
+  }
 }
 
 // --- MESSAGES ---
@@ -537,12 +696,12 @@ async function sendMessage() {
   showTyping(true);
 
   try {
-    const data = await api('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ session_id: currentSessionId, message: text }),
-    });
+    const body = { session_id: currentSessionId, message: text };
+    const ctx = getPromptContext();
+    if (ctx) body.prompt_context = ctx;
+    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
     showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp);
+    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
   } catch (e) {
     showTyping(false);
     addMessageBubble('assistant', '[Error al conectar con el agente]');
@@ -551,7 +710,7 @@ async function sendMessage() {
   await refreshSessions();
 }
 
-function addMessageBubble(role, content, time) {
+function addMessageBubble(role, content, time, debugData) {
   const container = document.getElementById('messages');
   const indicator = document.getElementById('typingIndicator');
   const div = document.createElement('div');
@@ -559,7 +718,12 @@ function addMessageBubble(role, content, time) {
   if (content.startsWith('[🎤 Audio]')) div.classList.add('audio-msg');
 
   const now = time || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  div.innerHTML = `${escapeHtml(content)}<div class="time">${now}</div>`;
+  let html = `${escapeHtml(content)}<div class="time">${now}</div>`;
+  if (role === 'assistant' && debugData) {
+    html += `<a class="debug-toggle" onclick="toggleDebugPanel(this)">ver detalles</a>`;
+    html += `<div class="debug-panel" id="debug-${Date.now()}">${buildDebugHtml(debugData)}</div>`;
+  }
+  div.innerHTML = html;
   container.insertBefore(div, indicator);
   container.scrollTop = container.scrollHeight;
 }
@@ -604,18 +768,73 @@ async function sendAudio() {
   showTyping(true);
 
   try {
-    const data = await api('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ session_id: currentSessionId, message: audioMessage }),
-    });
+    const body = { session_id: currentSessionId, message: audioMessage };
+    const ctx = getPromptContext();
+    if (ctx) body.prompt_context = ctx;
+    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
     showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp);
+    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
   } catch (e) {
     showTyping(false);
     addMessageBubble('assistant', '[Error al conectar con el agente]');
   }
 
   await refreshSessions();
+}
+
+// --- DEBUG VIEWER ---
+function modelFriendlyName(slug) {
+  if (!slug) return '—';
+  const m = slug.match(/[^/]+$/);
+  return m ? m[0] : slug;
+}
+
+function buildDebugHtml(debug) {
+  if (!debug) return '';
+  const rag = debug.rag || {};
+  const tokens = debug.token_usage || {};
+  const detailsId = 'details-' + Date.now();
+  const technicalId = 'technical-' + Date.now();
+
+  let html = '<div class="debug-details">';
+  html += `<span class="item"><strong>Modelo:</strong> ${escapeHtml(modelFriendlyName(debug.model))}</span>`;
+  html += `<span class="item"><strong>RAG:</strong> ${rag.chunk_count || 0} chunks${rag.sources && rag.sources.length ? ' · ' + rag.sources.join(', ') : ''}</span>`;
+  html += `<span class="item"><strong>Historial:</strong> ${debug.history_message_count ?? '—'} mensajes</span>`;
+  html += `<span class="item"><strong>Tiempo:</strong> ${debug.response_time_ms ?? '—'} ms</span>`;
+  html += '</div>';
+
+  html += `<div class="debug-section-toggle" onclick="toggleDebugSection('${technicalId}')">▼ Debug técnico</div>`;
+  html += `<div id="${technicalId}" style="display:none;">`;
+  html += `<p class="debug-details"><span class="item"><strong>Tokens:</strong> in ${tokens.prompt_tokens ?? '—'} / out ${tokens.completion_tokens ?? '—'} / total ${tokens.total_tokens ?? '—'}</span>`;
+  html += `<span class="item"><strong>Params:</strong> temp=${debug.temperature ?? '—'}, max_tokens=${debug.max_tokens ?? '—'}</span></p>`;
+  html += '<details><summary>System prompt completo</summary><div class="debug-raw"><pre>' + escapeHtml(debug.system_prompt || '') + '</pre></div></details>';
+  html += '<details><summary>RAG chunks con scores</summary>';
+  (rag.chunks || []).forEach((c, i) => {
+    html += `<div class="debug-chunk"><div class="chunk-meta">${escapeHtml(c.source)} · similarity ${c.similarity != null ? c.similarity : '—'}</div><div class="chunk-text">${escapeHtml(c.text || '')}</div></div>`;
+  });
+  html += '</details>';
+  html += '<details><summary>Messages array</summary><div class="debug-raw"><pre>' + escapeHtml(JSON.stringify(debug.messages_sent || [], null, 2)) + '</pre></div></details>';
+  html += '</div>';
+
+  return html;
+}
+
+function toggleDebugPanel(el) {
+  const panel = el.nextElementSibling;
+  if (!panel || !panel.classList.contains('debug-panel')) return;
+  panel.classList.toggle('open');
+  el.textContent = panel.classList.contains('open') ? 'ocultar detalles' : 'ver detalles';
+}
+
+function toggleDebugSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  const toggle = el.previousElementSibling;
+  if (toggle && toggle.classList.contains('debug-section-toggle')) {
+    toggle.textContent = isHidden ? '▲ Debug técnico' : '▼ Debug técnico';
+  }
 }
 
 // --- RENDER SIDEBAR ---

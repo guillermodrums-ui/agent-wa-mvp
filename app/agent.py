@@ -1,3 +1,4 @@
+import time
 import httpx
 from app.models import ChatMessage
 
@@ -13,14 +14,29 @@ class WhatsAppAgent:
         self.temperature = self.agent_config.get("temperature", 0.7)
         self.max_tokens = self.agent_config.get("max_tokens", 500)
 
-    async def chat(self, history: list[ChatMessage], user_message: str, knowledge_base=None) -> str:
-        messages = [{"role": "system", "content": self.system_prompt}]
+    async def chat(
+        self,
+        history: list[ChatMessage],
+        user_message: str,
+        knowledge_base=None,
+        prompt_context: str = "",
+    ) -> dict:
+        system_content = self.system_prompt
+        if (prompt_context or "").strip():
+            system_content = system_content.rstrip() + "\n\n--- CONTEXTO ADICIONAL ---\n" + prompt_context.strip()
+
+        messages = [{"role": "system", "content": system_content}]
+
+        rag_chunks = []
+        rag_debug = []
 
         # RAG: inject relevant knowledge chunks
         if knowledge_base:
-            chunks = knowledge_base.search(user_message, n_results=5)
-            if chunks:
-                context = "\n\n".join(chunks)
+            result = knowledge_base.search_with_debug(user_message, n_results=5)
+            rag_chunks = result["chunks"]
+            rag_debug = result.get("debug", [])
+            if rag_chunks:
+                context = "\n\n".join(rag_chunks)
                 messages.append({
                     "role": "system",
                     "content": f"CONTEXTO RELEVANTE DE LA BASE DE CONOCIMIENTO:\n{context}",
@@ -31,6 +47,7 @@ class WhatsAppAgent:
 
         messages.append({"role": "user", "content": user_message})
 
+        t_start = time.monotonic()
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 OPENROUTER_URL,
@@ -47,4 +64,30 @@ class WhatsAppAgent:
             )
             response.raise_for_status()
             data = response.json()
-            return data["choices"][0]["message"]["content"]
+        t_end = time.monotonic()
+
+        reply_text = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+
+        return {
+            "reply": reply_text,
+            "debug": {
+                "model": self.model,
+                "temperature": self.temperature,
+                "max_tokens": self.max_tokens,
+                "response_time_ms": round((t_end - t_start) * 1000),
+                "history_message_count": len(history),
+                "rag": {
+                    "chunk_count": len(rag_chunks),
+                    "sources": list({d["source"] for d in rag_debug}),
+                    "chunks": rag_debug,
+                },
+                "token_usage": {
+                    "prompt_tokens": usage.get("prompt_tokens"),
+                    "completion_tokens": usage.get("completion_tokens"),
+                    "total_tokens": usage.get("total_tokens"),
+                },
+                "system_prompt": messages[0]["content"],
+                "messages_sent": messages,
+            },
+        }

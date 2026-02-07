@@ -149,6 +149,37 @@ class KnowledgeBase:
         results = self.collection.query(query_texts=[query], n_results=n)
         return results["documents"][0] if results["documents"] else []
 
+    def search_with_debug(self, query: str, n_results: int = 5) -> dict:
+        """Search for relevant chunks and return debug metadata (sources, distances)."""
+        if self.collection.count() == 0:
+            return {"chunks": [], "debug": []}
+
+        n = min(n_results, self.collection.count())
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=n,
+            include=["documents", "metadatas", "distances"],
+        )
+
+        chunks = results["documents"][0] if results["documents"] else []
+        metadatas = results["metadatas"][0] if results.get("metadatas") else []
+        distances = results["distances"][0] if results.get("distances") else []
+
+        debug = []
+        for i, chunk_text in enumerate(chunks):
+            meta = metadatas[i] if i < len(metadatas) else {}
+            dist = distances[i] if i < len(distances) else None
+            debug.append({
+                "text": chunk_text,
+                "source": meta.get("source", "desconocido"),
+                "type": meta.get("type", ""),
+                "chunk_index": meta.get("chunk_index", 0),
+                "distance": round(dist, 4) if dist is not None else None,
+                "similarity": round(1 - dist, 4) if dist is not None else None,
+            })
+
+        return {"chunks": chunks, "debug": debug}
+
     def list_documents(self) -> list[dict]:
         """List all unique documents in the knowledge base."""
         if self.collection.count() == 0:

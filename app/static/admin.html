@@ -340,6 +340,17 @@ input[type="file"] {
         </div>
       </div>
     </div>
+
+    <div class="section">
+      <h2>Contexto por defecto para nuevas sesiones</h2>
+      <p class="desc">Texto extra que se agrega al system prompt solo para esta demo. Las sesiones nuevas copian este valor. Se guarda en memoria (se pierde al reiniciar el servidor).</p>
+      <div class="form-row vertical">
+        <div>
+          <textarea id="defaultPromptContext" class="prompt-textarea" placeholder="Ej: El cliente de esta sesion es Juan, prefiere que le hablen de vos. Hoy hay 10% de descuento en creatina." style="min-height:120px;"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveDefaultPromptContext()">Guardar contexto por defecto</button>
+      </div>
+    </div>
   </div>
 
   <!-- TAB: CONOCIMIENTO -->
@@ -476,6 +487,32 @@ function updatePromptStatus() {
     status.textContent = 'Sin cambios';
     status.className = 'prompt-status';
     btn.disabled = true;
+  }
+}
+
+// --- DEFAULT PROMPT CONTEXT ---
+async function loadDefaultPromptContext() {
+  try {
+    const res = await fetch('/api/config/prompt-context');
+    const data = await res.json();
+    document.getElementById('defaultPromptContext').value = data.prompt_context || '';
+  } catch (e) {
+    console.error('Failed to load default prompt context:', e);
+  }
+}
+
+async function saveDefaultPromptContext() {
+  const text = document.getElementById('defaultPromptContext').value;
+  try {
+    const res = await fetch('/api/config/prompt-context', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt_context: text || '' }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Contexto por defecto guardado. Las nuevas sesiones lo usaran.');
+  } catch (e) {
+    showToast('Error al guardar', 'error');
   }
 }
 
@@ -644,6 +681,7 @@ function escapeHtml(text) {
 // --- INIT ---
 document.getElementById('systemPrompt').addEventListener('input', updatePromptStatus);
 loadPrompt();
+loadDefaultPromptContext();
 loadDocuments();
 </script>
 </body>

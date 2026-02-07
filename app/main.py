@@ -21,6 +21,9 @@ kb = KnowledgeBase(persist_dir="data/chroma")
 # In-memory session storage
 sessions: dict[str, ChatSession] = {}
 
+# Default prompt context for new sessions (in-memory, lost on restart)
+default_prompt_context: str = ""
+
 app = FastAPI(title="La Fórmula - WhatsApp Agent MVP")
 
 # Serve static files
@@ -75,7 +78,11 @@ async def update_prompt(req: UpdatePromptRequest):
 async def create_session(req: NewSessionRequest = NewSessionRequest()):
     session_id = str(uuid.uuid4())[:8]
     phone = req.phone_number or f"+54 9 11 {random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
-    session = ChatSession(id=session_id, phone_number=phone)
+    session = ChatSession(
+        id=session_id,
+        phone_number=phone,
+        prompt_context=default_prompt_context,
+    )
     sessions[session_id] = session
     return {"id": session_id, "phone_number": phone}
 
@@ -109,6 +116,33 @@ async def delete_session(session_id: str):
     return {"ok": True}
 
 
+class UpdatePromptContextRequest(BaseModel):
+    prompt_context: str
+
+
+@app.put("/api/sessions/{session_id}/prompt-context")
+async def update_session_prompt_context(session_id: str, req: UpdatePromptContextRequest):
+    session = sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session.prompt_context = req.prompt_context or ""
+    return {"ok": True, "prompt_context": session.prompt_context}
+
+
+# --- Config: default prompt context (for new sessions) ---
+
+@app.get("/api/config/prompt-context")
+async def get_default_prompt_context():
+    return {"prompt_context": default_prompt_context}
+
+
+@app.put("/api/config/prompt-context")
+async def update_default_prompt_context(req: UpdatePromptContextRequest):
+    global default_prompt_context
+    default_prompt_context = req.prompt_context or ""
+    return {"ok": True, "prompt_context": default_prompt_context}
+
+
 # --- Chat (with RAG) ---
 
 @app.post("/api/chat")
@@ -121,9 +155,21 @@ async def send_message(req: SendMessageRequest):
     user_msg = ChatMessage(role="user", content=req.message)
     session.messages.append(user_msg)
 
+    # Update session prompt_context if provided in request
+    if req.prompt_context is not None:
+        session.prompt_context = req.prompt_context
+
     # Get agent response with RAG
+    debug_info = None
     try:
-        reply = await agent.chat(session.messages[:-1], req.message, knowledge_base=kb)
+        result = await agent.chat(
+            session.messages[:-1],
+            req.message,
+            knowledge_base=kb,
+            prompt_context=getattr(session, "prompt_context", "") or "",
+        )
+        reply = result["reply"]
+        debug_info = result.get("debug")
     except Exception as e:
         reply = f"[Error del agente: {e}]"
 
@@ -131,7 +177,10 @@ async def send_message(req: SendMessageRequest):
     assistant_msg = ChatMessage(role="assistant", content=reply)
     session.messages.append(assistant_msg)
 
-    return {"reply": reply, "timestamp": assistant_msg.timestamp}
+    out = {"reply": reply, "timestamp": assistant_msg.timestamp}
+    if debug_info is not None:
+        out["debug"] = debug_info
+    return out
 
 
 # --- Knowledge Base ---
