@@ -115,7 +115,7 @@ Mauri es **personal trainer** y vende suplementos deportivos (creatina, testoste
 
 ```yaml
 business:
-  name: "Mauri Fitness"
+  name: "La Fórmula"
   owner: "Mauri"
   description: "Personal trainer y venta de suplementos deportivos"
   products:
@@ -128,7 +128,7 @@ business:
 agent:
   name: "Nico"
   system_prompt: |
-    Sos Nico, el asistente virtual de Mauri Fitness por WhatsApp.
+    Sos Nico, el asistente virtual de La Fórmula por WhatsApp.
     Mauri es personal trainer y vende suplementos deportivos.
 
     PRODUCTOS QUE MANEJAMOS:
@@ -165,7 +165,7 @@ agent:
     - Sugerí productos complementarios si tiene sentido
 
     EJEMPLO DE TONO:
-    "Hola! Soy Nico, asistente de Mauri Fitness 💪 En qué te puedo ayudar?"
+    "Hola! Soy Nico, asistente de La Fórmula 💪 En qué te puedo ayudar?"
 
   model: "deepseek/deepseek-chat"
   temperature: 0.7
@@ -405,7 +405,7 @@ Además, pasar `knowledge_base` al `agent.chat()` en el endpoint `/api/chat`.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  🔧 Panel Admin - Mauri Fitness                     │
+│  🔧 Panel Admin - La Fórmula                     │
 │  ← Volver al Chat                                   │
 ├─────────────────────────────────────────────────────┤
 │                                                     │

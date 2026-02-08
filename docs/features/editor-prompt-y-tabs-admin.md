@@ -15,7 +15,7 @@ El editor de prompt es **en memoria** — no escribe a `config.yaml`. Los cambio
 
 | Archivo | Cambios |
 |---------|---------|
-| `config/config.yaml` | Fix nombre: "Mauri Fitness" → "La Fórmula" en business.name |
+| `config/config.yaml` | Fix nombre: "La Fórmula" → "La Fórmula" en business.name |
 | `app/main.py` | +2 endpoints: `GET/POST /api/config/prompt` con `UpdatePromptRequest` (Pydantic). Prompt se guarda en memoria via `agent.system_prompt` |
 | `app/static/admin.html` | Reescrito completo: +editor de prompt, +tab system (Personalidad / Conocimiento), +CSS tabs, header cambiado a "Panel de Administracion" |
 | `app/static/index.html` | Fix fallbacks hardcodeados: title, sidebar header, chat header → "La Fórmula" |

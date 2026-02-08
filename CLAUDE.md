@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp chatbot agent MVP for **Mauri Fitness** (personal training + sports supplements). The agent is called **"Nico"** and uses a local web-based WhatsApp simulator before real WhatsApp API integration. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval.
+WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements). The agent is called **"Nico"** and uses a local web-based WhatsApp simulator before real WhatsApp API integration. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval.
 
 ## Commands
 
