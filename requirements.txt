@@ -7,3 +7,4 @@ python-dotenv==1.0.1
 chromadb==0.5.23
 PyMuPDF==1.25.3
 python-multipart==0.0.12
+aiosqlite==0.20.0

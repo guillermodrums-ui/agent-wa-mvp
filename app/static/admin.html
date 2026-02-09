@@ -304,6 +304,94 @@ input[type="file"] {
 .toast.success { background: var(--wa-green); color: #fff; }
 .toast.error { background: #f56565; color: #fff; }
 
+/* --- CHANNEL CARD --- */
+.channel-card {
+  background: var(--wa-sidebar);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.channel-card.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.channel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.channel-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.channel-icon.wa { background: #25D366; }
+.channel-icon.ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.channel-icon.tg { background: #0088cc; }
+
+.channel-header .channel-name { font-size: 16px; font-weight: 500; }
+.channel-header .channel-badge {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.channel-badge.connected { background: var(--wa-green); color: #fff; }
+.channel-badge.disconnected { background: var(--wa-input-bg); color: var(--wa-text-secondary); }
+.channel-badge.connecting { background: #f6ad55; color: #111; }
+.channel-badge.coming-soon { background: var(--wa-input-bg); color: var(--wa-text-secondary); }
+
+.channel-body {
+  padding: 8px 0;
+}
+
+.channel-body p {
+  font-size: 13px;
+  color: var(--wa-text-secondary);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.qr-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.qr-container img {
+  max-width: 280px;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.qr-instructions {
+  font-size: 13px;
+  color: var(--wa-text-secondary);
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-secondary:hover { opacity: 0.85; }
+
 /* --- RESPONSIVE --- */
 @media (max-width: 600px) {
   .container { padding: 12px; }
@@ -323,6 +411,7 @@ input[type="file"] {
   <div class="tabs">
     <button class="tab active" data-tab="personalidad" onclick="switchTab('personalidad')">Personalidad</button>
     <button class="tab" data-tab="conocimiento" onclick="switchTab('conocimiento')">Conocimiento</button>
+    <button class="tab" data-tab="canales" onclick="switchTab('canales')">Canales</button>
   </div>
 
   <!-- TAB: PERSONALIDAD -->
@@ -423,6 +512,64 @@ input[type="file"] {
       <ul class="doc-list" id="docList">
         <li class="empty-docs">No hay documentos. Subi archivos para que Nico los use como contexto.</li>
       </ul>
+    </div>
+  </div>
+
+  <!-- TAB: CANALES -->
+  <div class="tab-content" id="tab-canales">
+    <!-- WhatsApp -->
+    <div class="channel-card" id="waCard">
+      <div class="channel-header">
+        <div class="channel-icon wa">&#128242;</div>
+        <span class="channel-name">WhatsApp</span>
+        <span class="channel-badge disconnected" id="waBadge">Desconectado</span>
+      </div>
+      <div class="channel-body" id="waBody">
+        <!-- State: disconnected (default) -->
+        <div id="waDisconnected">
+          <p>Conecta un numero de WhatsApp real para que Nico responda automaticamente a tus clientes. Usa el protocolo WhatsApp Web — no necesitas WhatsApp Business API.</p>
+          <button class="btn btn-primary" onclick="connectWhatsApp()">Conectar WhatsApp</button>
+        </div>
+        <!-- State: scanning QR -->
+        <div id="waScanning" style="display:none;">
+          <div class="qr-container">
+            <img id="waQrImage" src="" alt="QR Code">
+            <p class="qr-instructions">Abri WhatsApp en tu celular &gt; Dispositivos vinculados &gt; Vincular dispositivo &gt; Escaneá este codigo QR</p>
+          </div>
+          <div style="text-align:center; margin-top:14px;">
+            <button class="btn-secondary" onclick="cancelWhatsApp()">Cancelar</button>
+          </div>
+        </div>
+        <!-- State: connected -->
+        <div id="waConnected" style="display:none;">
+          <p>WhatsApp conectado. Nico esta respondiendo mensajes automaticamente.</p>
+          <button class="btn btn-danger" onclick="disconnectWhatsApp()" style="padding:10px 20px; font-size:14px;">Desconectar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instagram (coming soon) -->
+    <div class="channel-card disabled">
+      <div class="channel-header">
+        <div class="channel-icon ig">&#128247;</div>
+        <span class="channel-name">Instagram</span>
+        <span class="channel-badge coming-soon">Proximamente</span>
+      </div>
+      <div class="channel-body">
+        <p>Responde mensajes directos de Instagram automaticamente. Disponible pronto.</p>
+      </div>
+    </div>
+
+    <!-- Telegram (coming soon) -->
+    <div class="channel-card disabled">
+      <div class="channel-header">
+        <div class="channel-icon tg">&#9992;</div>
+        <span class="channel-name">Telegram</span>
+        <span class="channel-badge coming-soon">Proximamente</span>
+      </div>
+      <div class="channel-body">
+        <p>Conecta un bot de Telegram para atender clientes en esa plataforma. Disponible pronto.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -678,11 +825,111 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// --- WHATSAPP CHANNEL ---
+let waPollingInterval = null;
+
+function setWaState(state) {
+  document.getElementById('waDisconnected').style.display = state === 'disconnected' ? 'block' : 'none';
+  document.getElementById('waScanning').style.display = state === 'scanning' ? 'block' : 'none';
+  document.getElementById('waConnected').style.display = state === 'connected' ? 'block' : 'none';
+
+  const badge = document.getElementById('waBadge');
+  if (state === 'connected') {
+    badge.textContent = 'Conectado';
+    badge.className = 'channel-badge connected';
+  } else if (state === 'scanning') {
+    badge.textContent = 'Escaneando...';
+    badge.className = 'channel-badge connecting';
+  } else {
+    badge.textContent = 'Desconectado';
+    badge.className = 'channel-badge disconnected';
+  }
+}
+
+async function connectWhatsApp() {
+  try {
+    const res = await fetch('/api/channels/whatsapp/connect', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.detail || 'Error al conectar', 'error');
+      return;
+    }
+    if (data.qr_base64) {
+      document.getElementById('waQrImage').src = data.qr_base64;
+      setWaState('scanning');
+      startWaPolling();
+    } else {
+      showToast('No se pudo obtener el codigo QR. Intenta de nuevo.', 'error');
+    }
+  } catch (e) {
+    showToast('Error de conexion con el servidor', 'error');
+  }
+}
+
+async function disconnectWhatsApp() {
+  try {
+    await fetch('/api/channels/whatsapp/disconnect', { method: 'POST' });
+    setWaState('disconnected');
+    stopWaPolling();
+    showToast('WhatsApp desconectado');
+  } catch (e) {
+    showToast('Error al desconectar', 'error');
+  }
+}
+
+function cancelWhatsApp() {
+  setWaState('disconnected');
+  stopWaPolling();
+}
+
+function startWaPolling() {
+  stopWaPolling();
+  waPollingInterval = setInterval(pollWaStatus, 5000);
+}
+
+function stopWaPolling() {
+  if (waPollingInterval) {
+    clearInterval(waPollingInterval);
+    waPollingInterval = null;
+  }
+}
+
+async function pollWaStatus() {
+  try {
+    const res = await fetch('/api/channels/whatsapp/status');
+    const data = await res.json();
+    if (data.connected) {
+      setWaState('connected');
+      stopWaPolling();
+      showToast('WhatsApp conectado exitosamente');
+    }
+  } catch (e) {
+    // silently ignore polling errors
+  }
+}
+
+async function loadWaStatus() {
+  try {
+    const res = await fetch('/api/channels/whatsapp/status');
+    const data = await res.json();
+    if (data.connected) {
+      setWaState('connected');
+    } else if (data.state === 'not_configured') {
+      setWaState('disconnected');
+    } else {
+      setWaState('disconnected');
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 // --- INIT ---
 document.getElementById('systemPrompt').addEventListener('input', updatePromptStatus);
 loadPrompt();
 loadDefaultPromptContext();
 loadDocuments();
+loadWaStatus();
 </script>
 </body>
 </html>

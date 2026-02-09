@@ -18,6 +18,8 @@ class ChatSession(BaseModel):
     messages: list[ChatMessage] = []
     prompt_context: str = ""
     created_at: str = ""
+    channel: str = "simulator"
+    sender_name: str = ""
 
     def model_post_init(self, __context):
         if not self.created_at:

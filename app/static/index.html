@@ -124,6 +124,19 @@ body {
   font-size: 14px;
   font-weight: 400;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-item .info .name .wa-badge {
+  font-size: 10px;
+  background: #25D366;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .chat-item .info .preview {
@@ -842,14 +855,21 @@ function renderChatList() {
   const list = document.getElementById('chatList');
   list.innerHTML = '';
   sessions.forEach(s => {
+    const isWa = s.channel === 'whatsapp';
+    const avatar = isWa ? '📱' : '👤';
+    const badge = isWa ? '<span class="wa-badge">WA</span>' : '';
+    const displayName = isWa && s.sender_name
+      ? `${escapeHtml(s.sender_name)} (${escapeHtml(s.phone_number)})`
+      : escapeHtml(s.phone_number);
+
     const div = document.createElement('div');
     div.className = `chat-item ${s.id === currentSessionId ? 'active' : ''}`;
     div.dataset.session = s.id;
     div.onclick = () => selectSession(s.id);
     div.innerHTML = `
-      <div class="avatar">👤</div>
+      <div class="avatar">${avatar}</div>
       <div class="info">
-        <div class="name">${escapeHtml(s.phone_number)}</div>
+        <div class="name">${displayName}${badge}</div>
         <div class="preview">${s.last_message ? escapeHtml(s.last_message) : 'Chat nuevo'}</div>
       </div>
       <button class="delete-btn" onclick="deleteSession(event, '${s.id}')">✕</button>
