@@ -4,73 +4,86 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements). The agent is called **"Nico"** and uses a local web-based WhatsApp simulator before real WhatsApp API integration. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval.
+WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements in Uruguay). The agent **"Nico"** handles customer inquiries via WhatsApp (Evolution API) and a web-based simulator. Built with Python/FastAPI, OpenRouter (DeepSeek) for LLM, ChromaDB for RAG, SQLite for sessions.
+
+**All agent responses must be in Argentine/Uruguayan Spanish** (vos, tenés, che).
 
 ## Commands
 
-### Run with Docker (recommended)
+### Run with Docker (recommended — starts all 3 services)
 ```bash
 docker compose up --build
-# App at http://localhost:7070
+# Agent: http://localhost:7070  |  Admin: http://localhost:7070/admin
+# Evolution API: http://localhost:8080
 ```
 
-### Run locally
+### Run locally (agent only, no WhatsApp)
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 7070
 ```
 
-Requires `.env` with `OPENROUTER_API_KEY` and `CLIENT_CONFIG_PATH=config/config.yaml` (see `.env.example`).
+Requires `.env` with at minimum `OPENROUTER_API_KEY` and `CLIENT_CONFIG_PATH=config/config.yaml` (see `.env.example`).
 
 ### No test framework configured yet
 
 ## Architecture
 
+### Two Message Paths
+
+1. **Simulator** (web UI): `POST /api/chat` → session lookup → RAG search → LLM call → response returned to browser
+2. **WhatsApp** (real): Evolution API webhook → `POST /api/webhooks/evolution` → parse + dedup → get/create session by phone → RAG + LLM → send reply back via Evolution API
+
+Both paths share the same agent (`WhatsAppAgent.chat()`), knowledge base, and session store.
+
 ### Module Responsibilities
 
-- **`app/main.py`** — FastAPI server, all HTTP routes, session orchestration. Holds global state: agent instance, knowledge base, and in-memory sessions dict.
-- **`app/agent.py`** — `WhatsAppAgent` class. Constructs message payloads (system prompt + RAG context + history) and calls OpenRouter API asynchronously via httpx.
-- **`app/knowledge.py`** — `KnowledgeBase` class wrapping ChromaDB. Handles document ingestion (PDF via PyMuPDF, text, WhatsApp chat exports), chunking, semantic search (top-5 results), and document management.
+- **`app/main.py`** — FastAPI server, all HTTP routes, webhook handler, session orchestration. Wires together agent, KB, session store, and channel manager at module level.
+- **`app/agent.py`** — `WhatsAppAgent` class. Builds message array (system prompt + optional prompt_context + RAG chunks + history) and calls OpenRouter. Returns reply + debug info (token usage, RAG sources, response time).
+- **`app/knowledge.py`** — `KnowledgeBase` wrapping ChromaDB. Ingests PDFs (PyMuPDF), text, WhatsApp chat exports. Chunks by paragraph (500 chars max), searches with cosine similarity (top-5).
+- **`app/sessions.py`** — `SessionStore` using `aiosqlite`. Tables: `sessions`, `messages`, `processed_webhooks`. WAL mode. Handles session CRUD, message persistence, and webhook deduplication.
 - **`app/models.py`** — Pydantic models: `ChatMessage`, `ChatSession`, `SendMessageRequest`, `NewSessionRequest`.
-- **`app/config.py`** — Loads YAML config from `CLIENT_CONFIG_PATH`, auto-injects product catalog into the system prompt.
-- **`config/config.yaml`** — All business-specific config: business info, agent personality/system prompt, model settings, discount rules.
+- **`app/config.py`** — Loads YAML from `CLIENT_CONFIG_PATH`. Auto-appends `config/catalogo.txt` (if present) into the system prompt.
+- **`app/channels/`** — Channel abstraction: `BaseChannel` ABC, `ChannelManager` registry, `WhatsAppChannel` (Evolution API v2 client).
 
-### Request Flow
+### Webhook Filtering (Evolution API)
 
-1. User sends message via web UI → `POST /api/chat` with `session_id` + `message`
-2. Message appended to in-memory session history
-3. Knowledge base queried for top-5 semantically relevant chunks
-4. Agent builds message array: system prompt → KB context → conversation history → new message
-5. Async POST to OpenRouter API (`deepseek/deepseek-chat`)
-6. Response saved to session and returned to frontend
+The webhook handler in `main.py` aggressively filters incoming events:
+- Only processes `messages.upsert` events
+- Skips: `fromMe` (prevents reply loops), group messages (`@g.us`), non-text messages
+- Deduplicates via `message_id` in SQLite (cleaned up every 5 min)
+
+### Config-Driven Agent
+
+Business logic, personality, and product catalog live in `config/config.yaml`. The system prompt, model, temperature, and max_tokens are all configurable there. Product catalog can also be loaded from `config/catalogo.txt`.
 
 ### Frontend
 
-Two vanilla HTML/JS/CSS pages served as static files (no build step):
-- **`app/static/index.html`** — WhatsApp-style chat UI with sidebar for session management
-- **`app/static/admin.html`** — Knowledge base admin panel (upload PDFs, add text/notes, import WhatsApp exports, manage documents)
+Two vanilla HTML/JS/CSS pages (no build step):
+- **`app/static/index.html`** — WhatsApp-style chat UI with session sidebar (shows WA badge + sender_name for real sessions)
+- **`app/static/admin.html`** — 3 tabs: Personalidad (edit system prompt), Conocimiento (KB management), Canales (WhatsApp QR connect/disconnect)
 
-### Data Persistence
+## Docker Setup
 
-- **Sessions**: In-memory dict (lost on restart — intentional for MVP)
-- **Knowledge base**: ChromaDB persisted to `data/chroma/` (survives restarts via Docker volume)
-
-### Docker
-
-- `docker-compose.yml` mounts three volumes for development: `app/` (code hot-reload), `config/` (runtime config changes), `data/chroma/` (vector DB persistence)
-- Port 7070. `PORT` env var supported for cloud platforms (Railway, Render).
+Three services in `docker-compose.yml`:
+- **`agent`** (port 7070) — this app, with hot-reload volumes for `app/`, `config/`, `data/`
+- **`evolution-api`** (port 8080) — `evoapicloud/evolution-api:v2.3.7` with PostgreSQL + Prisma. Sends webhooks to `http://agent:7070/api/webhooks/evolution`
+- **`postgres`** (5432) — backing store for Evolution API only
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for LLM access |
+| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for LLM |
 | `CLIENT_CONFIG_PATH` | Yes | Path to client YAML config (default: `config/config.yaml`) |
+| `EVOLUTION_API_URL` | For WhatsApp | Evolution API base URL (e.g. `http://evolution-api:8080`) |
+| `EVOLUTION_API_KEY` | For WhatsApp | Evolution API authentication key |
+| `EVOLUTION_INSTANCE_NAME` | No | Instance name (default: `laformula`) |
 | `PORT` | No | Server port (default: `7070`) |
 
-## Key Design Decisions
+## Data Persistence
 
-- **Configuration-driven**: Business logic, agent personality, and product catalog all live in `config/config.yaml` — same codebase can serve different clients.
-- **RAG over stuffing**: Product knowledge is indexed in ChromaDB rather than always included in the prompt, reducing token cost per message.
-- **All async**: FastAPI + httpx for non-blocking I/O throughout.
-- **Spanish (Argentine dialect)**: The agent speaks in Argentine Spanish with natural speech patterns — maintain this in any prompt changes.
+- **Sessions + messages**: SQLite at `data/sessions.db` (WAL mode)
+- **Knowledge base**: ChromaDB at `data/chroma/`
+- **Webhook dedup**: `processed_webhooks` table in same SQLite DB (auto-cleaned every 5 min)
+- All persisted via `./data` Docker volume mount

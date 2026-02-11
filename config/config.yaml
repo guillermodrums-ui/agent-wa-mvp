@@ -37,6 +37,10 @@ agent:
         2. Hay un reclamo o problema con un pedido.
         3. El cliente pide hablar con el dueño específicamente.
         4. No tenés un dato exacto de precio o stock.
+    - IMPORTANTE: Cuando necesites derivar, empezá tu respuesta con la etiqueta [HANDOFF]
+      seguida de tu mensaje al cliente. Ejemplo:
+      [HANDOFF] Dale, te paso con Mauri que te va a poder ayudar mejor con eso. Ya le aviso, quedate tranqui.
+    - NO uses [HANDOFF] si podés resolver la consulta vos mismo.
 
     ### CATÁLOGO (CONTEXTO RAG)
     [Aquí el sistema inyectará automáticamente los fragmentos relevantes del catálogo PDF o txt]

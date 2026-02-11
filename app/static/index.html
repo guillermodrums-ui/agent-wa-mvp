@@ -466,6 +466,41 @@ body {
 }
 .debug-chunk .chunk-text { white-space: pre-wrap; word-break: break-word; }
 
+/* --- SYSTEM BUBBLE --- */
+.message.system {
+  align-self: center;
+  background: rgba(255,255,255,0.08);
+  color: var(--wa-text-secondary);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  max-width: 80%;
+  text-align: center;
+}
+
+/* --- HANDOFF BANNER --- */
+.handoff-banner {
+  display: none;
+  padding: 10px 16px;
+  background: #f6ad55;
+  color: #111;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+.handoff-banner.show { display: block; }
+
+/* --- MODE DOT in sidebar --- */
+.mode-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mode-dot.bot { background: var(--wa-green); }
+.mode-dot.handoff_pending { background: #f56565; }
+.mode-dot.human { background: #f6ad55; }
+
 /* --- PROMPT CONTEXT (per session) --- */
 .context-block {
   padding: 10px 16px;
@@ -564,6 +599,8 @@ body {
         </div>
       </div>
 
+      <div class="handoff-banner" id="handoffBanner">Sesion derivada — esperando operador</div>
+
       <div class="messages" id="messages">
         <div class="typing-indicator" id="typingIndicator">
           <span></span><span></span><span></span>
@@ -661,6 +698,14 @@ async function selectSession(sessionId) {
   const session = await api(`/api/sessions/${sessionId}`);
   renderMessages(session.messages);
   document.getElementById('promptContextInput').value = session.prompt_context || '';
+
+  // Update handoff banner based on session mode
+  if (session.mode === 'handoff_pending' || session.mode === 'human') {
+    showHandoffBanner(true, session.mode);
+  } else {
+    showHandoffBanner(false);
+  }
+
   document.getElementById('messageInput').focus();
 }
 
@@ -701,7 +746,17 @@ async function sendMessage() {
     if (ctx) body.prompt_context = ctx;
     const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
     showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+
+    if (data.handoff && data.reply == null) {
+      // Session is in handoff mode — message saved but no bot reply
+      showHandoffBanner(true, data.mode);
+    } else {
+      if (data.reply) addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+      if (data.handoff) {
+        addSystemBubble('Sesion derivada a un operador');
+        showHandoffBanner(true, data.mode);
+      }
+    }
   } catch (e) {
     showTyping(false);
     addMessageBubble('assistant', '[Error al conectar con el agente]');
@@ -728,6 +783,28 @@ function addMessageBubble(role, content, time, debugData) {
   container.scrollTop = container.scrollHeight;
 }
 
+function addSystemBubble(text) {
+  const container = document.getElementById('messages');
+  const indicator = document.getElementById('typingIndicator');
+  const div = document.createElement('div');
+  div.className = 'message system';
+  div.textContent = text;
+  container.insertBefore(div, indicator);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showHandoffBanner(show, mode) {
+  const banner = document.getElementById('handoffBanner');
+  if (show) {
+    banner.classList.add('show');
+    banner.textContent = mode === 'human'
+      ? 'Un operador esta respondiendo esta conversacion'
+      : 'Sesion derivada — esperando operador';
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
 function renderMessages(messages) {
   const container = document.getElementById('messages');
   const indicator = document.getElementById('typingIndicator');
@@ -735,7 +812,15 @@ function renderMessages(messages) {
   Array.from(container.children).forEach(el => {
     if (el !== indicator) el.remove();
   });
-  messages.forEach(msg => addMessageBubble(msg.role, msg.content, msg.timestamp));
+  messages.forEach(msg => {
+    if (msg.source === 'system') {
+      addSystemBubble(msg.content);
+    } else if (msg.source === 'human') {
+      addMessageBubble(msg.role, msg.content, msg.timestamp);
+    } else {
+      addMessageBubble(msg.role, msg.content, msg.timestamp);
+    }
+  });
 }
 
 function showTyping(show) {
@@ -846,12 +931,14 @@ function renderChatList() {
     div.className = `chat-item ${s.id === currentSessionId ? 'active' : ''}`;
     div.dataset.session = s.id;
     div.onclick = () => selectSession(s.id);
+    const modeClass = s.mode || 'bot';
     div.innerHTML = `
       <div class="avatar">👤</div>
       <div class="info">
         <div class="name">${escapeHtml(s.phone_number)}</div>
         <div class="preview">${s.last_message ? escapeHtml(s.last_message) : 'Chat nuevo'}</div>
       </div>
+      ${modeClass !== 'bot' ? `<div class="mode-dot ${modeClass}" title="${modeClass === 'handoff_pending' ? 'Pendiente' : 'Humano'}"></div>` : ''}
       <button class="delete-btn" onclick="deleteSession(event, '${s.id}')">✕</button>
     `;
     list.appendChild(div);

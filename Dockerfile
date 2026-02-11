@@ -15,4 +15,4 @@ EXPOSE 7070
 
 # Usar PORT dinámico para compatibilidad con plataformas cloud
 # Remover --reload en producción (solo para desarrollo local)
-CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7070}"
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7070} --log-level $(echo ${LOG_LEVEL:-info} | tr '[:upper:]' '[:lower:]')"
