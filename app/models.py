@@ -39,6 +39,8 @@ class SendMessageRequest(BaseModel):
 class NewSessionRequest(BaseModel):
     phone_number: str = ""
     is_simulation: bool = False
+    prompt_context: str | None = None  # optional; if set, initializes session with this context
+    system_prompt_override: str | None = None  # optional; if set, overrides agent system prompt for this session
 
 
 class HandoffRequest(BaseModel):

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Fórmula - WhatsApp Agent</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --wa-green: #25D366;
+  --wa-dark: #111B21;
+  --wa-sidebar: #202C33;
+  --wa-chat-bg: #0B141A;
+  --wa-input-bg: #2A3942;
+  --wa-header: #202C33;
+  --wa-bubble-out: #005C4B;
+  --wa-bubble-in: #202C33;
+  --wa-text: #E9EDEF;
+  --wa-text-secondary: #8696A0;
+  --wa-border: #2A3942;
+  --wa-hover: #2A3942;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--wa-dark);
+  color: var(--wa-text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+  width: 340px;
+  min-width: 340px;
+  background: var(--wa-sidebar);
+  border-right: 1px solid var(--wa-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 16px;
+  background: var(--wa-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--wa-border);
+}
+
+.sidebar-header h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sidebar-header .badge {
+  font-size: 11px;
+  background: var(--wa-green);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.btn-new-chat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--wa-border);
+  color: var(--wa-green);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-new-chat:hover { background: var(--wa-hover); }
+.btn-new-chat .icon { font-size: 20px; }
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+.chat-item:hover { background: var(--wa-hover); }
+.chat-item.active { background: var(--wa-input-bg); }
+
+.chat-item .avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--wa-input-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.chat-item .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-item .info .name {
+  font-size: 14px;
+  font-weight: 400;
+  margin-bottom: 2px;
+}
+
+.chat-item .info .preview {
+  font-size: 13px;
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-item .delete-btn {
+  background: none;
+  border: none;
+  color: var(--wa-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.chat-item:hover .delete-btn { opacity: 1; }
+.chat-item .delete-btn:hover { color: #f56565; }
+
+/* --- CHAT AREA --- */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--wa-chat-bg);
+}
+
+.chat-header {
+  padding: 12px 16px;
+  background: var(--wa-header);
+  border-bottom: 1px solid var(--wa-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-header .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--wa-input-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.chat-header .info .name { font-size: 15px; }
+.chat-header .info .status {
+  font-size: 12px;
+  color: var(--wa-text-secondary);
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message {
+  max-width: 65%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.message .time {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--wa-bubble-out);
+  border-top-right-radius: 0;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background: var(--wa-bubble-in);
+  border-top-left-radius: 0;
+}
+
+.message.audio-msg {
+  font-style: italic;
+  color: var(--wa-text-secondary);
+}
+
+.typing-indicator {
+  align-self: flex-start;
+  background: var(--wa-bubble-in);
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-top-left-radius: 0;
+  display: none;
+}
+
+.typing-indicator span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wa-text-secondary);
+  margin: 0 2px;
+  animation: typing 1.4s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* --- INPUT --- */
+.input-area {
+  padding: 12px 16px;
+  background: var(--wa-header);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-audio {
+  background: none;
+  border: none;
+  color: var(--wa-text-secondary);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.btn-audio:hover { background: var(--wa-hover); color: var(--wa-text); }
+
+.input-area input {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 14px;
+  outline: none;
+}
+.input-area input::placeholder { color: var(--wa-text-secondary); }
+
+.btn-send {
+  background: var(--wa-green);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.btn-send:hover { opacity: 0.85; }
+.btn-send:disabled { opacity: 0.4; cursor: default; }
+
+/* --- EMPTY STATE --- */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--wa-text-secondary);
+  text-align: center;
+  padding: 40px;
+}
+.empty-state .icon { font-size: 64px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--wa-text); font-weight: 400; }
+.empty-state p { font-size: 14px; max-width: 400px; line-height: 1.5; }
+
+/* --- AUDIO MODAL --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--wa-sidebar);
+  border-radius: 12px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+}
+.modal h3 { margin-bottom: 8px; font-size: 16px; font-weight: 500; }
+.modal p { font-size: 13px; color: var(--wa-text-secondary); margin-bottom: 16px; }
+.modal textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  font-family: inherit;
+}
+.modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal .btn-cancel {
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  cursor: pointer;
+  font-size: 14px;
+}
+.modal .btn-confirm {
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  background: var(--wa-green);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .sidebar { width: 100%; min-width: unset; position: absolute; z-index: 10; }
+  .sidebar.hidden { display: none; }
+  .messages { padding: 12px 16px; }
+  .message { max-width: 85%; }
+  .chat-header .btn-back {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--wa-text);
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 4px;
+  }
+}
+@media (min-width: 769px) {
+  .chat-header .btn-back { display: none; }
+}
+
+/* --- DEBUG VIEWER --- */
+.debug-toggle {
+  font-size: 11px;
+  opacity: 0.6;
+  color: var(--wa-text-secondary);
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+}
+.debug-toggle:hover { opacity: 1; }
+
+.debug-panel {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid var(--wa-border);
+}
+.debug-panel.open { display: block; }
+
+.debug-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 10px;
+}
+.debug-details .item { color: var(--wa-text-secondary); }
+.debug-details .item strong { color: var(--wa-text); margin-right: 4px; }
+
+.debug-section-toggle {
+  cursor: pointer;
+  color: var(--wa-green);
+  font-size: 12px;
+  margin: 8px 0 6px 0;
+}
+.debug-section-toggle:hover { text-decoration: underline; }
+
+.debug-raw {
+  margin-top: 6px;
+}
+.debug-raw pre {
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.debug-chunk {
+  background: rgba(0,0,0,0.2);
+  border-left: 3px solid var(--wa-green);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 0 6px 6px 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.debug-chunk .chunk-meta {
+  color: var(--wa-text-secondary);
+  margin-bottom: 4px;
+}
+.debug-chunk .chunk-text { white-space: pre-wrap; word-break: break-word; }
+
+/* --- SYSTEM BUBBLE --- */
+.message.system {
+  align-self: center;
+  background: rgba(255,255,255,0.08);
+  color: var(--wa-text-secondary);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  max-width: 80%;
+  text-align: center;
+}
+
+/* --- HANDOFF BANNER --- */
+.handoff-banner {
+  display: none;
+  padding: 10px 16px;
+  background: #f6ad55;
+  color: #111;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+.handoff-banner.show { display: block; }
+
+/* --- MODE DOT in sidebar --- */
+.mode-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mode-dot.bot { background: var(--wa-green); }
+.mode-dot.handoff_pending { background: #f56565; }
+.mode-dot.human { background: #f6ad55; }
+
+/* --- PROMPT CONTEXT (per session) --- */
+.context-block {
+  padding: 10px 16px;
+  background: var(--wa-header);
+  border-bottom: 1px solid var(--wa-border);
+  font-size: 13px;
+}
+.context-toggle {
+  cursor: pointer;
+  color: var(--wa-green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.context-toggle:hover { text-decoration: underline; }
+.context-toggle .arrow { transition: transform 0.2s; }
+.context-block.open .context-toggle .arrow { transform: rotate(90deg); }
+.context-panel {
+  display: none;
+  margin-top: 10px;
+}
+.context-block.open .context-panel { display: block; }
+.context-panel textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 13px;
+  resize: vertical;
+  font-family: inherit;
+  outline: none;
+}
+.context-panel textarea:focus { border-color: var(--wa-green); }
+.context-panel .context-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+.context-panel .btn-save-ctx {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.context-panel .btn-save-ctx:hover { background: var(--wa-hover); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2 id="businessName">La Fórmula</h2>
+      <a href="/admin" style="font-size:18px;text-decoration:none;color:var(--wa-text-secondary);padding:4px;" title="Admin - Base de Conocimiento">&#9881;</a>
+    </div>
+    <button class="btn-new-chat" onclick="createSession()">
+      <span class="icon">+</span> Nuevo Chat (simular cliente)
+    </button>
+    <div class="chat-list" id="chatList"></div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">💬</div>
+      <h3 id="emptyTitle">Simulador WhatsApp Agent</h3>
+      <p>Creá un nuevo chat para simular un cliente escribiéndole a <strong id="agentNameEmpty">Nico</strong> por WhatsApp.</p>
+    </div>
+
+    <div id="activeChat" style="display:none; flex:1; flex-direction:column;">
+      <div class="chat-header">
+        <button class="btn-back" onclick="showSidebar()">←</button>
+        <div class="avatar">🤖</div>
+        <div class="info">
+          <div class="name" id="chatAgentName">Nico - La Fórmula</div>
+          <div class="status" id="chatStatus">en línea</div>
+        </div>
+      </div>
+
+      <div class="context-block" id="contextBlock">
+        <div class="context-toggle" onclick="toggleContextPanel()">
+          <span class="arrow">▶</span>
+          <span id="contextToggleLabel">Contexto para Nico</span>
+        </div>
+        <div class="context-panel">
+          <textarea id="promptContextInput" placeholder="Info extra para esta sesion (ej: cliente es Juan, prefiere tuteo; hoy hay 10% en creatina)."></textarea>
+          <div class="context-actions">
+            <button type="button" class="btn-save-ctx" onclick="saveSessionPromptContext()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="handoff-banner" id="handoffBanner">Sesion derivada — esperando operador</div>
+
+      <div class="messages" id="messages">
+        <div class="typing-indicator" id="typingIndicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <button class="btn-audio" onclick="openAudioModal()" title="Simular audio">🎤</button>
+        <input type="text" id="messageInput" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="btn-send" id="btnSend" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO MODAL -->
+<div class="modal-overlay" id="audioModal">
+  <div class="modal">
+    <h3>🎤 Simular mensaje de audio</h3>
+    <p>Escribí lo que "diría" el cliente en un audio. En producción esto se transcribiría con Whisper.</p>
+    <textarea id="audioText" placeholder="Ej: Hola Mauri, quería saber si tenés creatina en stock..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAudioModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="sendAudio()">Enviar como audio</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentSessionId = null;
+let sessions = [];
+
+// --- API ---
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+// --- INIT ---
+async function init() {
+  try {
+    const config = await api('/api/config');
+    document.getElementById('businessName').textContent = config.business_name;
+    document.getElementById('agentNameEmpty').textContent = config.agent_name;
+    document.getElementById('chatAgentName').textContent = `${config.agent_name} - ${config.business_name}`;
+    document.getElementById('contextToggleLabel').textContent = `Contexto para ${config.agent_name}`;
+  } catch (e) {
+    console.error('Config load failed:', e);
+  }
+  await refreshSessions();
+}
+
+// --- SESSIONS ---
+async function refreshSessions() {
+  sessions = await api('/api/sessions');
+  renderChatList();
+}
+
+async function createSession() {
+  const data = await api('/api/sessions', { method: 'POST', body: '{}' });
+  await refreshSessions();
+  selectSession(data.id);
+  // On mobile, hide sidebar
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('hidden');
+  }
+}
+
+async function deleteSession(e, sessionId) {
+  e.stopPropagation();
+  await api(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+  if (currentSessionId === sessionId) {
+    currentSessionId = null;
+    document.getElementById('activeChat').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'flex';
+  }
+  await refreshSessions();
+}
+
+async function selectSession(sessionId) {
+  currentSessionId = sessionId;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('activeChat').style.display = 'flex';
+
+  // Highlight active
+  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+  const item = document.querySelector(`[data-session="${sessionId}"]`);
+  if (item) item.classList.add('active');
+
+  // Load messages and prompt context for this session
+  const session = await api(`/api/sessions/${sessionId}`);
+  renderMessages(session.messages);
+  document.getElementById('promptContextInput').value = session.prompt_context || '';
+
+  // Update handoff banner based on session mode
+  if (session.mode === 'handoff_pending' || session.mode === 'human') {
+    showHandoffBanner(true, session.mode);
+  } else {
+    showHandoffBanner(false);
+  }
+
+  document.getElementById('messageInput').focus();
+}
+
+function toggleContextPanel() {
+  document.getElementById('contextBlock').classList.toggle('open');
+}
+
+function getPromptContext() {
+  return (document.getElementById('promptContextInput').value || '').trim();
+}
+
+async function saveSessionPromptContext() {
+  if (!currentSessionId) return;
+  const text = getPromptContext();
+  try {
+    await api(`/api/sessions/${currentSessionId}/prompt-context`, {
+      method: 'PUT',
+      body: JSON.stringify({ prompt_context: text }),
+    });
+  } catch (e) {
+    console.error('Error saving prompt context:', e);
+  }
+}
+
+// --- MESSAGES ---
+async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if (!text || !currentSessionId) return;
+
+  input.value = '';
+  addMessageBubble('user', text);
+  showTyping(true);
+
+  try {
+    const body = { session_id: currentSessionId, message: text };
+    const ctx = getPromptContext();
+    if (ctx) body.prompt_context = ctx;
+    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+    showTyping(false);
+
+    if (data.handoff && data.reply == null) {
+      // Session is in handoff mode — message saved but no bot reply
+      showHandoffBanner(true, data.mode);
+    } else {
+      if (data.reply) addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+      if (data.handoff) {
+        addSystemBubble('Sesion derivada a un operador');
+        showHandoffBanner(true, data.mode);
+      }
+    }
+  } catch (e) {
+    showTyping(false);
+    addMessageBubble('assistant', '[Error al conectar con el agente]');
+  }
+
+  await refreshSessions();
+}
+
+function addMessageBubble(role, content, time, debugData) {
+  const container = document.getElementById('messages');
+  const indicator = document.getElementById('typingIndicator');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  if (content.startsWith('[🎤 Audio]')) div.classList.add('audio-msg');
+
+  const now = time || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  let html = `${escapeHtml(content)}<div class="time">${now}</div>`;
+  if (role === 'assistant' && debugData) {
+    html += `<a class="debug-toggle" onclick="toggleDebugPanel(this)">ver detalles</a>`;
+    html += `<div class="debug-panel" id="debug-${Date.now()}">${buildDebugHtml(debugData)}</div>`;
+  }
+  div.innerHTML = html;
+  container.insertBefore(div, indicator);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addSystemBubble(text) {
+  const container = document.getElementById('messages');
+  const indicator = document.getElementById('typingIndicator');
+  const div = document.createElement('div');
+  div.className = 'message system';
+  div.textContent = text;
+  container.insertBefore(div, indicator);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showHandoffBanner(show, mode) {
+  const banner = document.getElementById('handoffBanner');
+  if (show) {
+    banner.classList.add('show');
+    banner.textContent = mode === 'human'
+      ? 'Un operador esta respondiendo esta conversacion'
+      : 'Sesion derivada — esperando operador';
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById('messages');
+  const indicator = document.getElementById('typingIndicator');
+  // Clear all except typing indicator
+  Array.from(container.children).forEach(el => {
+    if (el !== indicator) el.remove();
+  });
+  messages.forEach(msg => {
+    if (msg.source === 'system') {
+      addSystemBubble(msg.content);
+    } else if (msg.source === 'human') {
+      addMessageBubble(msg.role, msg.content, msg.timestamp);
+    } else {
+      addMessageBubble(msg.role, msg.content, msg.timestamp);
+    }
+  });
+}
+
+function showTyping(show) {
+  const indicator = document.getElementById('typingIndicator');
+  indicator.style.display = show ? 'block' : 'none';
+  document.getElementById('chatStatus').textContent = show ? 'escribiendo...' : 'en línea';
+  const container = document.getElementById('messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+// --- AUDIO ---
+function openAudioModal() {
+  if (!currentSessionId) return;
+  document.getElementById('audioModal').classList.add('show');
+  document.getElementById('audioText').focus();
+}
+
+function closeAudioModal() {
+  document.getElementById('audioModal').classList.remove('show');
+  document.getElementById('audioText').value = '';
+}
+
+async function sendAudio() {
+  const text = document.getElementById('audioText').value.trim();
+  if (!text || !currentSessionId) return;
+  closeAudioModal();
+
+  const audioMessage = `[🎤 Audio] ${text}`;
+  addMessageBubble('user', audioMessage);
+  showTyping(true);
+
+  try {
+    const body = { session_id: currentSessionId, message: audioMessage };
+    const ctx = getPromptContext();
+    if (ctx) body.prompt_context = ctx;
+    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+    showTyping(false);
+    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+  } catch (e) {
+    showTyping(false);
+    addMessageBubble('assistant', '[Error al conectar con el agente]');
+  }
+
+  await refreshSessions();
+}
+
+// --- DEBUG VIEWER ---
+function modelFriendlyName(slug) {
+  if (!slug) return '—';
+  const m = slug.match(/[^/]+$/);
+  return m ? m[0] : slug;
+}
+
+function buildDebugHtml(debug) {
+  if (!debug) return '';
+  const rag = debug.rag || {};
+  const tokens = debug.token_usage || {};
+  const detailsId = 'details-' + Date.now();
+  const technicalId = 'technical-' + Date.now();
+
+  let html = '<div class="debug-details">';
+  html += `<span class="item"><strong>Modelo:</strong> ${escapeHtml(modelFriendlyName(debug.model))}</span>`;
+  html += `<span class="item"><strong>RAG:</strong> ${rag.chunk_count || 0} chunks${rag.sources && rag.sources.length ? ' · ' + rag.sources.join(', ') : ''}</span>`;
+  html += `<span class="item"><strong>Historial:</strong> ${debug.history_message_count ?? '—'} mensajes</span>`;
+  html += `<span class="item"><strong>Tiempo:</strong> ${debug.response_time_ms ?? '—'} ms</span>`;
+  html += '</div>';
+
+  html += `<div class="debug-section-toggle" onclick="toggleDebugSection('${technicalId}')">▼ Debug técnico</div>`;
+  html += `<div id="${technicalId}" style="display:none;">`;
+  html += `<p class="debug-details"><span class="item"><strong>Tokens:</strong> in ${tokens.prompt_tokens ?? '—'} / out ${tokens.completion_tokens ?? '—'} / total ${tokens.total_tokens ?? '—'}</span>`;
+  html += `<span class="item"><strong>Params:</strong> temp=${debug.temperature ?? '—'}, max_tokens=${debug.max_tokens ?? '—'}</span></p>`;
+  html += '<details><summary>System prompt completo</summary><div class="debug-raw"><pre>' + escapeHtml(debug.system_prompt || '') + '</pre></div></details>';
+  html += '<details><summary>RAG chunks con scores</summary>';
+  (rag.chunks || []).forEach((c, i) => {
+    html += `<div class="debug-chunk"><div class="chunk-meta">${escapeHtml(c.source)} · similarity ${c.similarity != null ? c.similarity : '—'}</div><div class="chunk-text">${escapeHtml(c.text || '')}</div></div>`;
+  });
+  html += '</details>';
+  html += '<details><summary>Messages array</summary><div class="debug-raw"><pre>' + escapeHtml(JSON.stringify(debug.messages_sent || [], null, 2)) + '</pre></div></details>';
+  html += '</div>';
+
+  return html;
+}
+
+function toggleDebugPanel(el) {
+  const panel = el.nextElementSibling;
+  if (!panel || !panel.classList.contains('debug-panel')) return;
+  panel.classList.toggle('open');
+  el.textContent = panel.classList.contains('open') ? 'ocultar detalles' : 'ver detalles';
+}
+
+function toggleDebugSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  const toggle = el.previousElementSibling;
+  if (toggle && toggle.classList.contains('debug-section-toggle')) {
+    toggle.textContent = isHidden ? '▲ Debug técnico' : '▼ Debug técnico';
+  }
+}
+
+// --- RENDER SIDEBAR ---
+function renderChatList() {
+  const list = document.getElementById('chatList');
+  list.innerHTML = '';
+  sessions.forEach(s => {
+    const div = document.createElement('div');
+    div.className = `chat-item ${s.id === currentSessionId ? 'active' : ''}`;
+    div.dataset.session = s.id;
+    div.onclick = () => selectSession(s.id);
+    const modeClass = s.mode || 'bot';
+    div.innerHTML = `
+      <div class="avatar">👤</div>
+      <div class="info">
+        <div class="name">${escapeHtml(s.phone_number)}</div>
+        <div class="preview">${s.last_message ? escapeHtml(s.last_message) : 'Chat nuevo'}</div>
+      </div>
+      ${modeClass !== 'bot' ? `<div class="mode-dot ${modeClass}" title="${modeClass === 'handoff_pending' ? 'Pendiente' : 'Humano'}"></div>` : ''}
+      <button class="delete-btn" onclick="deleteSession(event, '${s.id}')">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// --- MOBILE ---
+function showSidebar() {
+  document.getElementById('sidebar').classList.remove('hidden');
+}
+
+// --- UTILS ---
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// --- START ---
+init();
+</script>
+</body>
+</html>

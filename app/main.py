@@ -52,9 +52,10 @@ async def root():
     return FileResponse("app/static/index.html")
 
 
-@app.get("/admin")
-async def admin_page():
-    return FileResponse("app/static/admin.html")
+# Admin functionality now integrated into main UI
+# @app.get("/admin")
+# async def admin_page():
+#     return FileResponse("app/static/admin.html")
 
 
 # --- Config ---
