@@ -1,964 +1,1259 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Fórmula - WhatsApp Agent</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Fórmula - WhatsApp Agent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-:root {
-  --wa-green: #25D366;
-  --wa-dark: #111B21;
-  --wa-sidebar: #202C33;
-  --wa-chat-bg: #0B141A;
-  --wa-input-bg: #2A3942;
-  --wa-header: #202C33;
-  --wa-bubble-out: #005C4B;
-  --wa-bubble-in: #202C33;
-  --wa-text: #E9EDEF;
-  --wa-text-secondary: #8696A0;
-  --wa-border: #2A3942;
-  --wa-hover: #2A3942;
-}
+    :root {
+      --wa-green: #25D366;
+      --wa-dark: #111B21;
+      --wa-sidebar: #202C33;
+      --wa-chat-bg: #0B141A;
+      --wa-input-bg: #2A3942;
+      --wa-header: #202C33;
+      --wa-bubble-out: #005C4B;
+      --wa-bubble-in: #202C33;
+      --wa-text: #E9EDEF;
+      --wa-text-secondary: #8696A0;
+      --wa-border: #2A3942;
+      --wa-hover: #2A3942;
+      --sim-accent: #3B82F6;
+      --prod-accent: #F59E0B;
+    }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--wa-dark);
-  color: var(--wa-text);
-  height: 100vh;
-  overflow: hidden;
-}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--wa-dark);
+      color: var(--wa-text);
+      height: 100vh;
+      overflow: hidden;
+    }
 
-.app {
-  display: flex;
-  height: 100vh;
-  max-width: 1600px;
-  margin: 0 auto;
-}
+    .app {
+      display: flex;
+      height: 100vh;
+    }
 
-/* --- SIDEBAR --- */
-.sidebar {
-  width: 340px;
-  min-width: 340px;
-  background: var(--wa-sidebar);
-  border-right: 1px solid var(--wa-border);
-  display: flex;
-  flex-direction: column;
-}
+    /* === NAV SIDEBAR === */
+    .nav-sidebar {
+      width: 70px;
+      background: #0d1117;
+      border-right: 1px solid var(--wa-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      gap: 8px;
+    }
 
-.sidebar-header {
-  padding: 16px;
-  background: var(--wa-header);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--wa-border);
-}
+    .nav-item {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      background: none;
+      border: none;
+      color: var(--wa-text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
 
-.sidebar-header h2 {
-  font-size: 16px;
-  font-weight: 500;
-}
+    .nav-item:hover {
+      background: var(--wa-hover);
+      color: var(--wa-text);
+    }
 
-.sidebar-header .badge {
-  font-size: 11px;
-  background: var(--wa-green);
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
+    .nav-item.active {
+      background: var(--wa-green);
+      color: #fff;
+    }
 
-.btn-new-chat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 14px 16px;
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--wa-border);
-  color: var(--wa-green);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-new-chat:hover { background: var(--wa-hover); }
-.btn-new-chat .icon { font-size: 20px; }
+    .nav-item.active.sim {
+      background: var(--sim-accent);
+    }
 
-.chat-list {
-  flex: 1;
-  overflow-y: auto;
-}
+    .nav-item.active.prod {
+      background: var(--prod-accent);
+    }
 
-.chat-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  transition: background 0.15s;
-}
-.chat-item:hover { background: var(--wa-hover); }
-.chat-item.active { background: var(--wa-input-bg); }
+    .nav-item .badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #f56565;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
 
-.chat-item .avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--wa-input-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
+    /* === MAIN CONTENT === */
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
 
-.chat-item .info {
-  flex: 1;
-  min-width: 0;
-}
+    .view {
+      display: none !important;
+      flex: 1;
+    }
 
-.chat-item .info .name {
-  font-size: 14px;
-  font-weight: 400;
-  margin-bottom: 2px;
-}
+    .view.active {
+      display: flex !important;
+    }
 
-.chat-item .info .preview {
-  font-size: 13px;
-  color: var(--wa-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+    /* === SIMULADOR VIEW === */
+    .sim-view {
+      flex-direction: column;
+    }
 
-.chat-item .delete-btn {
-  background: none;
-  border: none;
-  color: var(--wa-text-secondary);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.chat-item:hover .delete-btn { opacity: 1; }
-.chat-item .delete-btn:hover { color: #f56565; }
+    .sim-header {
+      padding: 16px 24px;
+      background: var(--wa-header);
+      border-bottom: 1px solid var(--wa-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-/* --- CHAT AREA --- */
-.chat-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--wa-chat-bg);
-}
+    .sim-header h1 {
+      font-size: 18px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-.chat-header {
-  padding: 12px 16px;
-  background: var(--wa-header);
-  border-bottom: 1px solid var(--wa-border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+    .sim-header .badge-sim {
+      background: var(--sim-accent);
+      color: #fff;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
 
-.chat-header .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--wa-input-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
+    .sim-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
 
-.chat-header .info .name { font-size: 15px; }
-.chat-header .info .status {
-  font-size: 12px;
-  color: var(--wa-text-secondary);
-}
+    .sim-config {
+      width: 350px;
+      background: var(--wa-sidebar);
+      border-right: 1px solid var(--wa-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px;
+    }
 
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+    .sim-config h3 {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--wa-text);
+    }
 
-.message {
-  max-width: 65%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.4;
-  position: relative;
-  word-wrap: break-word;
-}
+    .sim-config label {
+      font-size: 12px;
+      color: var(--wa-text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
 
-.message .time {
-  font-size: 11px;
-  color: rgba(255,255,255,0.45);
-  margin-top: 4px;
-  text-align: right;
-}
+    .sim-config textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--wa-border);
+      background: var(--wa-input-bg);
+      color: var(--wa-text);
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      resize: vertical;
+      outline: none;
+      line-height: 1.5;
+    }
 
-.message.user {
-  align-self: flex-end;
-  background: var(--wa-bubble-out);
-  border-top-right-radius: 0;
-}
+    .sim-config textarea:focus {
+      border-color: var(--sim-accent);
+    }
 
-.message.assistant {
-  align-self: flex-start;
-  background: var(--wa-bubble-in);
-  border-top-left-radius: 0;
-}
+    .sim-config .hint {
+      font-size: 11px;
+      color: var(--wa-text-secondary);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
 
-.message.audio-msg {
-  font-style: italic;
-  color: var(--wa-text-secondary);
-}
+    .sim-config .btn-reset {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      background: var(--wa-input-bg);
+      color: var(--wa-text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
 
-.typing-indicator {
-  align-self: flex-start;
-  background: var(--wa-bubble-in);
-  padding: 12px 16px;
-  border-radius: 8px;
-  border-top-left-radius: 0;
-  display: none;
-}
+    .sim-config .btn-reset:hover {
+      background: var(--wa-hover);
+    }
 
-.typing-indicator span {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--wa-text-secondary);
-  margin: 0 2px;
-  animation: typing 1.4s infinite;
-}
-.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    .sim-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--wa-chat-bg);
+    }
 
-@keyframes typing {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
-}
+    .sim-chat-header {
+      padding: 12px 20px;
+      background: var(--wa-header);
+      border-bottom: 1px solid var(--wa-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-/* --- INPUT --- */
-.input-area {
-  padding: 12px 16px;
-  background: var(--wa-header);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+    .sim-chat-header .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--sim-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
 
-.btn-audio {
-  background: none;
-  border: none;
-  color: var(--wa-text-secondary);
-  font-size: 22px;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: background 0.15s;
-}
-.btn-audio:hover { background: var(--wa-hover); color: var(--wa-text); }
+    .sim-chat-header .info .name {
+      font-size: 15px;
+      font-weight: 500;
+    }
 
-.input-area input {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: none;
-  background: var(--wa-input-bg);
-  color: var(--wa-text);
-  font-size: 14px;
-  outline: none;
-}
-.input-area input::placeholder { color: var(--wa-text-secondary); }
+    .sim-chat-header .info .status {
+      font-size: 12px;
+      color: var(--wa-text-secondary);
+    }
 
-.btn-send {
-  background: var(--wa-green);
-  border: none;
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.15s;
-}
-.btn-send:hover { opacity: 0.85; }
-.btn-send:disabled { opacity: 0.4; cursor: default; }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-/* --- EMPTY STATE --- */
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--wa-text-secondary);
-  text-align: center;
-  padding: 40px;
-}
-.empty-state .icon { font-size: 64px; margin-bottom: 16px; }
-.empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--wa-text); font-weight: 400; }
-.empty-state p { font-size: 14px; max-width: 400px; line-height: 1.5; }
+    .message {
+      max-width: 65%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
 
-/* --- AUDIO MODAL --- */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-.modal-overlay.show { display: flex; }
+    .message.user {
+      align-self: flex-end;
+      background: var(--wa-bubble-out);
+      border-top-right-radius: 0;
+    }
 
-.modal {
-  background: var(--wa-sidebar);
-  border-radius: 12px;
-  padding: 24px;
-  width: 420px;
-  max-width: 90vw;
-}
-.modal h3 { margin-bottom: 8px; font-size: 16px; font-weight: 500; }
-.modal p { font-size: 13px; color: var(--wa-text-secondary); margin-bottom: 16px; }
-.modal textarea {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--wa-border);
-  background: var(--wa-input-bg);
-  color: var(--wa-text);
-  font-size: 14px;
-  resize: vertical;
-  min-height: 80px;
-  outline: none;
-  font-family: inherit;
-}
-.modal .modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 16px;
-}
-.modal .btn-cancel {
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: none;
-  background: var(--wa-input-bg);
-  color: var(--wa-text);
-  cursor: pointer;
-  font-size: 14px;
-}
-.modal .btn-confirm {
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: none;
-  background: var(--wa-green);
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-}
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--wa-bubble-in);
+      border-top-left-radius: 0;
+    }
 
-/* --- RESPONSIVE --- */
-@media (max-width: 768px) {
-  .sidebar { width: 100%; min-width: unset; position: absolute; z-index: 10; }
-  .sidebar.hidden { display: none; }
-  .messages { padding: 12px 16px; }
-  .message { max-width: 85%; }
-  .chat-header .btn-back {
-    display: block;
-    background: none;
-    border: none;
-    color: var(--wa-text);
-    font-size: 20px;
-    cursor: pointer;
-    margin-right: 4px;
-  }
-}
-@media (min-width: 769px) {
-  .chat-header .btn-back { display: none; }
-}
+    .message .time {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 4px;
+      text-align: right;
+    }
 
-/* --- DEBUG VIEWER --- */
-.debug-toggle {
-  font-size: 11px;
-  opacity: 0.6;
-  color: var(--wa-text-secondary);
-  cursor: pointer;
-  margin-top: 4px;
-  display: inline-block;
-}
-.debug-toggle:hover { opacity: 1; }
+    .typing-indicator {
+      align-self: flex-start;
+      background: var(--wa-bubble-in);
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-top-left-radius: 0;
+      display: none;
+    }
 
-.debug-panel {
-  display: none;
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: rgba(0,0,0,0.25);
-  border-radius: 8px;
-  font-size: 12px;
-  border: 1px solid var(--wa-border);
-}
-.debug-panel.open { display: block; }
+    .typing-indicator span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--wa-text-secondary);
+      margin: 0 2px;
+      animation: typing 1.4s infinite;
+    }
 
-.debug-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  margin-bottom: 10px;
-}
-.debug-details .item { color: var(--wa-text-secondary); }
-.debug-details .item strong { color: var(--wa-text); margin-right: 4px; }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
 
-.debug-section-toggle {
-  cursor: pointer;
-  color: var(--wa-green);
-  font-size: 12px;
-  margin: 8px 0 6px 0;
-}
-.debug-section-toggle:hover { text-decoration: underline; }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
 
-.debug-raw {
-  margin-top: 6px;
-}
-.debug-raw pre {
-  background: #0d1117;
-  color: #e6edf3;
-  padding: 10px;
-  border-radius: 6px;
-  font-family: ui-monospace, monospace;
-  font-size: 11px;
-  max-height: 300px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
+    @keyframes typing {
 
-.debug-chunk {
-  background: rgba(0,0,0,0.2);
-  border-left: 3px solid var(--wa-green);
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  border-radius: 0 6px 6px 0;
-  font-size: 11px;
-  line-height: 1.4;
-}
-.debug-chunk .chunk-meta {
-  color: var(--wa-text-secondary);
-  margin-bottom: 4px;
-}
-.debug-chunk .chunk-text { white-space: pre-wrap; word-break: break-word; }
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
 
-/* --- SYSTEM BUBBLE --- */
-.message.system {
-  align-self: center;
-  background: rgba(255,255,255,0.08);
-  color: var(--wa-text-secondary);
-  font-size: 12px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  max-width: 80%;
-  text-align: center;
-}
+      30% {
+        transform: translateY(-6px);
+        opacity: 1;
+      }
+    }
 
-/* --- HANDOFF BANNER --- */
-.handoff-banner {
-  display: none;
-  padding: 10px 16px;
-  background: #f6ad55;
-  color: #111;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-}
-.handoff-banner.show { display: block; }
+    .input-area {
+      padding: 14px 20px;
+      background: var(--wa-header);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-/* --- MODE DOT in sidebar --- */
-.mode-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.mode-dot.bot { background: var(--wa-green); }
-.mode-dot.handoff_pending { background: #f56565; }
-.mode-dot.human { background: #f6ad55; }
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--wa-input-bg);
+      color: var(--wa-text);
+      font-size: 14px;
+      outline: none;
+    }
 
-/* --- PROMPT CONTEXT (per session) --- */
-.context-block {
-  padding: 10px 16px;
-  background: var(--wa-header);
-  border-bottom: 1px solid var(--wa-border);
-  font-size: 13px;
-}
-.context-toggle {
-  cursor: pointer;
-  color: var(--wa-green);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.context-toggle:hover { text-decoration: underline; }
-.context-toggle .arrow { transition: transform 0.2s; }
-.context-block.open .context-toggle .arrow { transform: rotate(90deg); }
-.context-panel {
-  display: none;
-  margin-top: 10px;
-}
-.context-block.open .context-panel { display: block; }
-.context-panel textarea {
-  width: 100%;
-  min-height: 80px;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--wa-border);
-  background: var(--wa-input-bg);
-  color: var(--wa-text);
-  font-size: 13px;
-  resize: vertical;
-  font-family: inherit;
-  outline: none;
-}
-.context-panel textarea:focus { border-color: var(--wa-green); }
-.context-panel .context-actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-}
-.context-panel .btn-save-ctx {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: none;
-  background: var(--wa-input-bg);
-  color: var(--wa-text);
-  font-size: 12px;
-  cursor: pointer;
-}
-.context-panel .btn-save-ctx:hover { background: var(--wa-hover); }
-</style>
+    .input-area input::placeholder {
+      color: var(--wa-text-secondary);
+    }
+
+    .btn-send {
+      background: var(--wa-green);
+      border: none;
+      color: #fff;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+    }
+
+    .btn-send:hover {
+      opacity: 0.85;
+    }
+
+    .btn-send:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* === PRODUCCION VIEW === */
+    .prod-view {}
+
+    .prod-list {
+      width: 320px;
+      background: var(--wa-sidebar);
+      border-right: 1px solid var(--wa-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .prod-list-header {
+      padding: 16px;
+      background: var(--wa-header);
+      border-bottom: 1px solid var(--wa-border);
+    }
+
+    .prod-list-header h2 {
+      font-size: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-prod {
+      background: var(--prod-accent);
+      color: #111;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .prod-list-items {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .prod-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+    }
+
+    .prod-item:hover {
+      background: var(--wa-hover);
+    }
+
+    .prod-item.active {
+      background: var(--wa-input-bg);
+    }
+
+    .prod-item .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--wa-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .prod-item .info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .prod-item .info .phone {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .prod-item .info .preview {
+      font-size: 13px;
+      color: var(--wa-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .prod-detail {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--wa-chat-bg);
+    }
+
+    .prod-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--wa-text-secondary);
+      font-size: 14px;
+    }
+
+    .prod-chat-header {
+      padding: 12px 20px;
+      background: var(--wa-header);
+      border-bottom: 1px solid var(--wa-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .prod-chat-header .info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .prod-chat-header .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--prod-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #111;
+    }
+
+    .prod-chat-header .details .phone {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .prod-chat-header .details .status {
+      font-size: 12px;
+      color: var(--wa-text-secondary);
+    }
+
+    /* === CEREBRO VIEW === */
+    .cerebro-view {
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .cerebro-view h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+
+    .section {
+      background: var(--wa-sidebar);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .section p.desc {
+      font-size: 13px;
+      color: var(--wa-text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .section textarea {
+      width: 100%;
+      min-height: 250px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--wa-border);
+      background: var(--wa-input-bg);
+      color: var(--wa-text);
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      resize: vertical;
+      outline: none;
+      line-height: 1.6;
+    }
+
+    .section textarea:focus {
+      border-color: var(--wa-green);
+    }
+
+    .section .btn-primary {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      background: var(--wa-green);
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      margin-top: 12px;
+    }
+
+    .section .btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .section .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .form-row.vertical {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-row label {
+      font-size: 13px;
+      color: var(--wa-text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .form-row input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--wa-border);
+      background: var(--wa-input-bg);
+      color: var(--wa-text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-row input[type="text"]:focus {
+      border-color: var(--wa-green);
+    }
+
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--wa-input-bg);
+      border: 1px dashed var(--wa-border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--wa-text-secondary);
+      transition: border-color 0.15s;
+      flex: 1;
+    }
+
+    .file-label:hover {
+      border-color: var(--wa-green);
+      color: var(--wa-text);
+    }
+
+    .file-label.has-file {
+      border-color: var(--wa-green);
+      color: var(--wa-green);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .doc-list {
+      list-style: none;
+      margin-top: 16px;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .doc-item:last-child {
+      border-bottom: none;
+    }
+
+    .doc-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .doc-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--wa-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .doc-meta .name {
+      font-size: 14px;
+    }
+
+    .doc-meta .detail {
+      font-size: 12px;
+      color: var(--wa-text-secondary);
+      margin-top: 2px;
+    }
+
+    .btn-danger {
+      background: none;
+      color: #f56565;
+      padding: 6px 12px;
+      font-size: 13px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-danger:hover {
+      background: rgba(245, 101, 101, 0.1);
+    }
+
+    .empty-docs {
+      text-align: center;
+      padding: 30px;
+      color: var(--wa-text-secondary);
+      font-size: 14px;
+    }
+
+    /* === TOAST === */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: var(--wa-green);
+      color: #fff;
+    }
+
+    .toast.error {
+      background: #f56565;
+      color: #fff;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+      .sim-config {
+        width: 100%;
+        position: absolute;
+        z-index: 10;
+      }
+
+      .sim-config.hidden {
+        display: none;
+      }
+
+      .messages {
+        padding: 12px 16px;
+      }
+
+      .message {
+        max-width: 85%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
-  <!-- SIDEBAR -->
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h2 id="businessName">La Fórmula</h2>
-      <a href="/admin" style="font-size:18px;text-decoration:none;color:var(--wa-text-secondary);padding:4px;" title="Admin - Base de Conocimiento">&#9881;</a>
-    </div>
-    <button class="btn-new-chat" onclick="createSession()">
-      <span class="icon">+</span> Nuevo Chat (simular cliente)
-    </button>
-    <div class="chat-list" id="chatList"></div>
-  </div>
-
-  <!-- CHAT AREA -->
-  <div class="chat-area" id="chatArea">
-    <div class="empty-state" id="emptyState">
-      <div class="icon">💬</div>
-      <h3 id="emptyTitle">Simulador WhatsApp Agent</h3>
-      <p>Creá un nuevo chat para simular un cliente escribiéndole a <strong id="agentNameEmpty">Nico</strong> por WhatsApp.</p>
+  <div class="app">
+    <!-- NAV SIDEBAR -->
+    <div class="nav-sidebar">
+      <button class="nav-item active sim" data-view="simulador" onclick="switchView('simulador')" title="Simulador">
+        🧪
+      </button>
+      <button class="nav-item prod" data-view="produccion" onclick="switchView('produccion')" title="Producción">
+        💬
+        <span class="badge" id="prodBadge" style="display:none;">0</span>
+      </button>
+      <button class="nav-item" data-view="cerebro" onclick="switchView('cerebro')" title="Cerebro">
+        ⚙️
+      </button>
     </div>
 
-    <div id="activeChat" style="display:none; flex:1; flex-direction:column;">
-      <div class="chat-header">
-        <button class="btn-back" onclick="showSidebar()">←</button>
-        <div class="avatar">🤖</div>
-        <div class="info">
-          <div class="name" id="chatAgentName">Nico - La Fórmula</div>
-          <div class="status" id="chatStatus">en línea</div>
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <!-- SIMULADOR VIEW -->
+      <div class="view sim-view active" id="view-simulador">
+        <div class="sim-header">
+          <h1>🧪 Simulador <span class="badge-sim">PRUEBAS</span></h1>
         </div>
-      </div>
-
-      <div class="context-block" id="contextBlock">
-        <div class="context-toggle" onclick="toggleContextPanel()">
-          <span class="arrow">▶</span>
-          <span id="contextToggleLabel">Contexto para Nico</span>
-        </div>
-        <div class="context-panel">
-          <textarea id="promptContextInput" placeholder="Info extra para esta sesion (ej: cliente es Juan, prefiere tuteo; hoy hay 10% en creatina)."></textarea>
-          <div class="context-actions">
-            <button type="button" class="btn-save-ctx" onclick="saveSessionPromptContext()">Guardar</button>
+        <div class="sim-body">
+          <div class="sim-config">
+            <h3>⚡ Configuración de Prueba</h3>
+            <label>System Prompt (solo para esta sesión)</label>
+            <textarea id="simPrompt" placeholder="Dejá vacío para usar el prompt de producción..."></textarea>
+            <p class="hint">💡 Editá el prompt acá para probar cambios sin afectar producción. Los cambios
+              solo aplican a esta sesión de simulación.</p>
+            <button class="btn-reset" onclick="resetSimPrompt()">Restaurar prompt de producción</button>
+          </div>
+          <div class="sim-chat">
+            <div class="sim-chat-header">
+              <div class="avatar">🤖</div>
+              <div class="info">
+                <div class="name" id="simAgentName">Nico - Simulador</div>
+                <div class="status">Modo prueba</div>
+              </div>
+            </div>
+            <div class="messages" id="simMessages">
+              <div class="typing-indicator" id="simTyping">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="input-area">
+              <input type="text" id="simInput" placeholder="Escribí un mensaje de prueba..."
+                onkeydown="if(event.key==='Enter')sendSimMessage()">
+              <button class="btn-send" onclick="sendSimMessage()">➤</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="handoff-banner" id="handoffBanner">Sesion derivada — esperando operador</div>
-
-      <div class="messages" id="messages">
-        <div class="typing-indicator" id="typingIndicator">
-          <span></span><span></span><span></span>
+      <!-- PRODUCCION VIEW -->
+      <div class="view prod-view" id="view-produccion">
+        <div class="prod-list">
+          <div class="prod-list-header">
+            <h2>💬 Mensajes <span class="badge-prod" id="prodCount">0</span></h2>
+          </div>
+          <div class="prod-list-items" id="prodList"></div>
+        </div>
+        <div class="prod-detail">
+          <div class="prod-empty" id="prodEmpty">Seleccioná una conversación</div>
+          <div id="prodActive" style="display:none;flex:1;flex-direction:column;">
+            <div class="prod-chat-header">
+              <div class="info">
+                <div class="avatar">📱</div>
+                <div class="details">
+                  <div class="phone" id="prodPhone"></div>
+                  <div class="status" id="prodStatus"></div>
+                </div>
+              </div>
+            </div>
+            <div class="messages" id="prodMessages"></div>
+            <div class="input-area">
+              <input type="text" id="prodInput" placeholder="Responder como operador..."
+                onkeydown="if(event.key==='Enter')sendProdReply()">
+              <button class="btn-send" onclick="sendProdReply()">➤</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="input-area">
-        <button class="btn-audio" onclick="openAudioModal()" title="Simular audio">🎤</button>
-        <input type="text" id="messageInput" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')sendMessage()">
-        <button class="btn-send" id="btnSend" onclick="sendMessage()">➤</button>
+      <!-- CEREBRO VIEW -->
+      <div class="view cerebro-view" id="view-cerebro">
+        <h1>⚙️ Cerebro del Agente</h1>
+
+        <div class="section">
+          <h2>🧠 Prompt del Agente (Producción)</h2>
+          <p class="desc">Este es el prompt que usa Nico en producción. Los cambios se aplican inmediatamente.
+          </p>
+          <textarea id="prodPrompt" placeholder="Cargando..."></textarea>
+          <button class="btn-primary" onclick="savePrompt()">Guardar cambios</button>
+        </div>
+
+        <div class="section">
+          <h2>📚 Base de Conocimiento</h2>
+          <p class="desc">Subí documentos PDF, transcripciones, o notas para que Nico las use como contexto.
+          </p>
+
+          <div class="form-row" style="margin-bottom:20px;">
+            <label class="file-label" id="pdfLabel" for="pdfInput">📄 Seleccionar PDF...</label>
+            <input type="file" id="pdfInput" accept=".pdf" onchange="updateFileLabel('pdfInput','pdfLabel')">
+            <button class="btn-primary" onclick="uploadPdf()">Subir</button>
+          </div>
+
+          <div class="form-row vertical">
+            <div>
+              <label>Título</label>
+              <input type="text" id="noteTitle" placeholder="Ej: Horarios de atención">
+            </div>
+            <div>
+              <label>Contenido</label>
+              <textarea id="noteText" placeholder="Ej: Atendemos de lunes a viernes..."
+                style="min-height:100px;"></textarea>
+            </div>
+            <button class="btn-primary" onclick="addNote()" style="align-self:flex-end;">Guardar
+              nota</button>
+          </div>
+
+          <h3 style="margin-top:24px;font-size:14px;font-weight:500;">Documentos indexados</h3>
+          <ul class="doc-list" id="docList">
+            <li class="empty-docs">No hay documentos</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- AUDIO MODAL -->
-<div class="modal-overlay" id="audioModal">
-  <div class="modal">
-    <h3>🎤 Simular mensaje de audio</h3>
-    <p>Escribí lo que "diría" el cliente en un audio. En producción esto se transcribiría con Whisper.</p>
-    <textarea id="audioText" placeholder="Ej: Hola Mauri, quería saber si tenés creatina en stock..."></textarea>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeAudioModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="sendAudio()">Enviar como audio</button>
-    </div>
-  </div>
-</div>
+  <div class="toast" id="toast"></div>
 
-<script>
-let currentSessionId = null;
-let sessions = [];
+  <script>
+    let currentView = 'simulador';
+    let simSessionId = null;
+    let prodSessionId = null;
+    let productionSessions = [];
+    let productionPrompt = '';
 
-// --- API ---
-async function api(path, options = {}) {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
-}
+    // === INIT ===
+    async function init() {
+      try {
+        const config = await api('/api/config');
+        document.getElementById('simAgentName').textContent = `${config.agent_name} - Simulador`;
 
-// --- INIT ---
-async function init() {
-  try {
-    const config = await api('/api/config');
-    document.getElementById('businessName').textContent = config.business_name;
-    document.getElementById('agentNameEmpty').textContent = config.agent_name;
-    document.getElementById('chatAgentName').textContent = `${config.agent_name} - ${config.business_name}`;
-    document.getElementById('contextToggleLabel').textContent = `Contexto para ${config.agent_name}`;
-  } catch (e) {
-    console.error('Config load failed:', e);
-  }
-  await refreshSessions();
-}
+        // Load production prompt
+        const promptData = await api('/api/config/prompt');
+        productionPrompt = promptData.system_prompt;
+        document.getElementById('prodPrompt').value = productionPrompt;
 
-// --- SESSIONS ---
-async function refreshSessions() {
-  sessions = await api('/api/sessions');
-  renderChatList();
-}
+        // Create simulation session
+        await createSimSession();
 
-async function createSession() {
-  const data = await api('/api/sessions', { method: 'POST', body: '{}' });
-  await refreshSessions();
-  selectSession(data.id);
-  // On mobile, hide sidebar
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.add('hidden');
-  }
-}
+        // Load production sessions
+        await loadProductionSessions();
 
-async function deleteSession(e, sessionId) {
-  e.stopPropagation();
-  await api(`/api/sessions/${sessionId}`, { method: 'DELETE' });
-  if (currentSessionId === sessionId) {
-    currentSessionId = null;
-    document.getElementById('activeChat').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'flex';
-  }
-  await refreshSessions();
-}
-
-async function selectSession(sessionId) {
-  currentSessionId = sessionId;
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('activeChat').style.display = 'flex';
-
-  // Highlight active
-  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
-  const item = document.querySelector(`[data-session="${sessionId}"]`);
-  if (item) item.classList.add('active');
-
-  // Load messages and prompt context for this session
-  const session = await api(`/api/sessions/${sessionId}`);
-  renderMessages(session.messages);
-  document.getElementById('promptContextInput').value = session.prompt_context || '';
-
-  // Update handoff banner based on session mode
-  if (session.mode === 'handoff_pending' || session.mode === 'human') {
-    showHandoffBanner(true, session.mode);
-  } else {
-    showHandoffBanner(false);
-  }
-
-  document.getElementById('messageInput').focus();
-}
-
-function toggleContextPanel() {
-  document.getElementById('contextBlock').classList.toggle('open');
-}
-
-function getPromptContext() {
-  return (document.getElementById('promptContextInput').value || '').trim();
-}
-
-async function saveSessionPromptContext() {
-  if (!currentSessionId) return;
-  const text = getPromptContext();
-  try {
-    await api(`/api/sessions/${currentSessionId}/prompt-context`, {
-      method: 'PUT',
-      body: JSON.stringify({ prompt_context: text }),
-    });
-  } catch (e) {
-    console.error('Error saving prompt context:', e);
-  }
-}
-
-// --- MESSAGES ---
-async function sendMessage() {
-  const input = document.getElementById('messageInput');
-  const text = input.value.trim();
-  if (!text || !currentSessionId) return;
-
-  input.value = '';
-  addMessageBubble('user', text);
-  showTyping(true);
-
-  try {
-    const body = { session_id: currentSessionId, message: text };
-    const ctx = getPromptContext();
-    if (ctx) body.prompt_context = ctx;
-    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
-    showTyping(false);
-
-    if (data.handoff && data.reply == null) {
-      // Session is in handoff mode — message saved but no bot reply
-      showHandoffBanner(true, data.mode);
-    } else {
-      if (data.reply) addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
-      if (data.handoff) {
-        addSystemBubble('Sesion derivada a un operador');
-        showHandoffBanner(true, data.mode);
+        // Load documents
+        await loadDocuments();
+      } catch (e) {
+        console.error('Init failed:', e);
       }
     }
-  } catch (e) {
-    showTyping(false);
-    addMessageBubble('assistant', '[Error al conectar con el agente]');
-  }
 
-  await refreshSessions();
-}
-
-function addMessageBubble(role, content, time, debugData) {
-  const container = document.getElementById('messages');
-  const indicator = document.getElementById('typingIndicator');
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-  if (content.startsWith('[🎤 Audio]')) div.classList.add('audio-msg');
-
-  const now = time || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  let html = `${escapeHtml(content)}<div class="time">${now}</div>`;
-  if (role === 'assistant' && debugData) {
-    html += `<a class="debug-toggle" onclick="toggleDebugPanel(this)">ver detalles</a>`;
-    html += `<div class="debug-panel" id="debug-${Date.now()}">${buildDebugHtml(debugData)}</div>`;
-  }
-  div.innerHTML = html;
-  container.insertBefore(div, indicator);
-  container.scrollTop = container.scrollHeight;
-}
-
-function addSystemBubble(text) {
-  const container = document.getElementById('messages');
-  const indicator = document.getElementById('typingIndicator');
-  const div = document.createElement('div');
-  div.className = 'message system';
-  div.textContent = text;
-  container.insertBefore(div, indicator);
-  container.scrollTop = container.scrollHeight;
-}
-
-function showHandoffBanner(show, mode) {
-  const banner = document.getElementById('handoffBanner');
-  if (show) {
-    banner.classList.add('show');
-    banner.textContent = mode === 'human'
-      ? 'Un operador esta respondiendo esta conversacion'
-      : 'Sesion derivada — esperando operador';
-  } else {
-    banner.classList.remove('show');
-  }
-}
-
-function renderMessages(messages) {
-  const container = document.getElementById('messages');
-  const indicator = document.getElementById('typingIndicator');
-  // Clear all except typing indicator
-  Array.from(container.children).forEach(el => {
-    if (el !== indicator) el.remove();
-  });
-  messages.forEach(msg => {
-    if (msg.source === 'system') {
-      addSystemBubble(msg.content);
-    } else if (msg.source === 'human') {
-      addMessageBubble(msg.role, msg.content, msg.timestamp);
-    } else {
-      addMessageBubble(msg.role, msg.content, msg.timestamp);
+    // === API ===
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options,
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
     }
-  });
-}
 
-function showTyping(show) {
-  const indicator = document.getElementById('typingIndicator');
-  indicator.style.display = show ? 'block' : 'none';
-  document.getElementById('chatStatus').textContent = show ? 'escribiendo...' : 'en línea';
-  const container = document.getElementById('messages');
-  container.scrollTop = container.scrollHeight;
-}
+    // === VIEW SWITCHING ===
+    function switchView(viewName) {
+      currentView = viewName;
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-// --- AUDIO ---
-function openAudioModal() {
-  if (!currentSessionId) return;
-  document.getElementById('audioModal').classList.add('show');
-  document.getElementById('audioText').focus();
-}
+      document.getElementById(`view-${viewName}`).classList.add('active');
+      document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
 
-function closeAudioModal() {
-  document.getElementById('audioModal').classList.remove('show');
-  document.getElementById('audioText').value = '';
-}
+      if (viewName === 'produccion') {
+        loadProductionSessions();
+      }
+    }
 
-async function sendAudio() {
-  const text = document.getElementById('audioText').value.trim();
-  if (!text || !currentSessionId) return;
-  closeAudioModal();
+    // === SIMULADOR ===
+    async function createSimSession() {
+      const data = await api('/api/sessions', {
+        method: 'POST',
+        body: JSON.stringify({ is_simulation: true }),
+      });
+      simSessionId = data.id;
+    }
 
-  const audioMessage = `[🎤 Audio] ${text}`;
-  addMessageBubble('user', audioMessage);
-  showTyping(true);
+    function resetSimPrompt() {
+      document.getElementById('simPrompt').value = '';
+      showToast('Prompt restaurado. El próximo mensaje usará el prompt de producción.');
+    }
 
-  try {
-    const body = { session_id: currentSessionId, message: audioMessage };
-    const ctx = getPromptContext();
-    if (ctx) body.prompt_context = ctx;
-    const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
-    showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
-  } catch (e) {
-    showTyping(false);
-    addMessageBubble('assistant', '[Error al conectar con el agente]');
-  }
+    async function sendSimMessage() {
+      const input = document.getElementById('simInput');
+      const text = input.value.trim();
+      if (!text || !simSessionId) return;
 
-  await refreshSessions();
-}
+      input.value = '';
+      addSimMessage('user', text);
+      showSimTyping(true);
 
-// --- DEBUG VIEWER ---
-function modelFriendlyName(slug) {
-  if (!slug) return '—';
-  const m = slug.match(/[^/]+$/);
-  return m ? m[0] : slug;
-}
+      try {
+        const customPrompt = document.getElementById('simPrompt').value.trim();
+        const body = {
+          session_id: simSessionId,
+          message: text,
+        };
+        if (customPrompt) {
+          body.system_prompt_override = customPrompt;
+        }
 
-function buildDebugHtml(debug) {
-  if (!debug) return '';
-  const rag = debug.rag || {};
-  const tokens = debug.token_usage || {};
-  const detailsId = 'details-' + Date.now();
-  const technicalId = 'technical-' + Date.now();
+        const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+        showSimTyping(false);
 
-  let html = '<div class="debug-details">';
-  html += `<span class="item"><strong>Modelo:</strong> ${escapeHtml(modelFriendlyName(debug.model))}</span>`;
-  html += `<span class="item"><strong>RAG:</strong> ${rag.chunk_count || 0} chunks${rag.sources && rag.sources.length ? ' · ' + rag.sources.join(', ') : ''}</span>`;
-  html += `<span class="item"><strong>Historial:</strong> ${debug.history_message_count ?? '—'} mensajes</span>`;
-  html += `<span class="item"><strong>Tiempo:</strong> ${debug.response_time_ms ?? '—'} ms</span>`;
-  html += '</div>';
+        if (data.reply) {
+          addSimMessage('assistant', data.reply, data.timestamp);
+        }
+      } catch (e) {
+        showSimTyping(false);
+        addSimMessage('assistant', '[Error al conectar con el agente]');
+      }
+    }
 
-  html += `<div class="debug-section-toggle" onclick="toggleDebugSection('${technicalId}')">▼ Debug técnico</div>`;
-  html += `<div id="${technicalId}" style="display:none;">`;
-  html += `<p class="debug-details"><span class="item"><strong>Tokens:</strong> in ${tokens.prompt_tokens ?? '—'} / out ${tokens.completion_tokens ?? '—'} / total ${tokens.total_tokens ?? '—'}</span>`;
-  html += `<span class="item"><strong>Params:</strong> temp=${debug.temperature ?? '—'}, max_tokens=${debug.max_tokens ?? '—'}</span></p>`;
-  html += '<details><summary>System prompt completo</summary><div class="debug-raw"><pre>' + escapeHtml(debug.system_prompt || '') + '</pre></div></details>';
-  html += '<details><summary>RAG chunks con scores</summary>';
-  (rag.chunks || []).forEach((c, i) => {
-    html += `<div class="debug-chunk"><div class="chunk-meta">${escapeHtml(c.source)} · similarity ${c.similarity != null ? c.similarity : '—'}</div><div class="chunk-text">${escapeHtml(c.text || '')}</div></div>`;
-  });
-  html += '</details>';
-  html += '<details><summary>Messages array</summary><div class="debug-raw"><pre>' + escapeHtml(JSON.stringify(debug.messages_sent || [], null, 2)) + '</pre></div></details>';
-  html += '</div>';
+    function addSimMessage(role, content, time) {
+      const container = document.getElementById('simMessages');
+      const indicator = document.getElementById('simTyping');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
 
-  return html;
-}
+      const now = time || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      div.innerHTML = `${escapeHtml(content)}<div class="time">${now}</div>`;
 
-function toggleDebugPanel(el) {
-  const panel = el.nextElementSibling;
-  if (!panel || !panel.classList.contains('debug-panel')) return;
-  panel.classList.toggle('open');
-  el.textContent = panel.classList.contains('open') ? 'ocultar detalles' : 'ver detalles';
-}
+      container.insertBefore(div, indicator);
+      container.scrollTop = container.scrollHeight;
+    }
 
-function toggleDebugSection(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const isHidden = el.style.display === 'none';
-  el.style.display = isHidden ? 'block' : 'none';
-  const toggle = el.previousElementSibling;
-  if (toggle && toggle.classList.contains('debug-section-toggle')) {
-    toggle.textContent = isHidden ? '▲ Debug técnico' : '▼ Debug técnico';
-  }
-}
+    function showSimTyping(show) {
+      document.getElementById('simTyping').style.display = show ? 'block' : 'none';
+    }
 
-// --- RENDER SIDEBAR ---
-function renderChatList() {
-  const list = document.getElementById('chatList');
-  list.innerHTML = '';
-  sessions.forEach(s => {
-    const div = document.createElement('div');
-    div.className = `chat-item ${s.id === currentSessionId ? 'active' : ''}`;
-    div.dataset.session = s.id;
-    div.onclick = () => selectSession(s.id);
-    const modeClass = s.mode || 'bot';
-    div.innerHTML = `
-      <div class="avatar">👤</div>
+    // === PRODUCCION ===
+    async function loadProductionSessions() {
+      try {
+        productionSessions = await api('/api/sessions?is_simulation=false');
+        renderProductionList();
+      } catch (e) {
+        console.error('Failed to load production sessions:', e);
+      }
+    }
+
+    function renderProductionList() {
+      const list = document.getElementById('prodList');
+      const count = document.getElementById('prodCount');
+      const badge = document.getElementById('prodBadge');
+
+      count.textContent = productionSessions.length;
+
+      if (productionSessions.length > 0) {
+        badge.textContent = productionSessions.length;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      if (productionSessions.length === 0) {
+        list.innerHTML = '<div class="empty-docs">No hay conversaciones de producción</div>';
+        return;
+      }
+
+      list.innerHTML = productionSessions.map(s => `
+    <div class="prod-item" data-id="${s.id}" onclick="selectProdSession('${s.id}')">
+      <div class="avatar">📱</div>
       <div class="info">
-        <div class="name">${escapeHtml(s.phone_number)}</div>
-        <div class="preview">${s.last_message ? escapeHtml(s.last_message) : 'Chat nuevo'}</div>
+        <div class="phone">${s.phone_number}</div>
+        <div class="preview">${s.last_message || 'Sin mensajes'}</div>
       </div>
-      ${modeClass !== 'bot' ? `<div class="mode-dot ${modeClass}" title="${modeClass === 'handoff_pending' ? 'Pendiente' : 'Humano'}"></div>` : ''}
-      <button class="delete-btn" onclick="deleteSession(event, '${s.id}')">✕</button>
-    `;
-    list.appendChild(div);
-  });
-}
+    </div>
+  `).join('');
+    }
 
-// --- MOBILE ---
-function showSidebar() {
-  document.getElementById('sidebar').classList.remove('hidden');
-}
+    async function selectProdSession(sessionId) {
+      prodSessionId = sessionId;
 
-// --- UTILS ---
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+      document.querySelectorAll('.prod-item').forEach(el => el.classList.remove('active'));
+      document.querySelector(`[data-id="${sessionId}"]`)?.classList.add('active');
 
-// --- START ---
-init();
-</script>
+      const session = await api(`/api/sessions/${sessionId}`);
+
+      document.getElementById('prodEmpty').style.display = 'none';
+      document.getElementById('prodActive').style.display = 'flex';
+      document.getElementById('prodPhone').textContent = session.phone_number;
+      document.getElementById('prodStatus').textContent = `${session.message_count || 0} mensajes`;
+
+      renderProdMessages(session.messages);
+    }
+
+    function renderProdMessages(messages) {
+      const container = document.getElementById('prodMessages');
+      container.innerHTML = '';
+
+      messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `message ${msg.role}`;
+        div.innerHTML = `${escapeHtml(msg.content)}<div class="time">${msg.timestamp}</div>`;
+        container.appendChild(div);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendProdReply() {
+      const input = document.getElementById('prodInput');
+      const text = input.value.trim();
+      if (!text || !prodSessionId) return;
+
+      input.value = '';
+
+      try {
+        await api(`/api/sessions/${prodSessionId}/reply`, {
+          method: 'POST',
+          body: JSON.stringify({ message: text }),
+        });
+
+        const session = await api(`/api/sessions/${prodSessionId}`);
+        renderProdMessages(session.messages);
+        await loadProductionSessions();
+      } catch (e) {
+        showToast('Error al enviar mensaje', 'error');
+      }
+    }
+
+    // === CEREBRO ===
+    async function savePrompt() {
+      const text = document.getElementById('prodPrompt').value;
+      if (!text.trim()) return showToast('El prompt no puede estar vacío', 'error');
+
+      try {
+        await api('/api/config/prompt', {
+          method: 'POST',
+          body: JSON.stringify({ system_prompt: text }),
+        });
+        productionPrompt = text;
+        showToast('Prompt actualizado en producción');
+      } catch (e) {
+        showToast('Error al guardar el prompt', 'error');
+      }
+    }
+
+    async function uploadPdf() {
+      const input = document.getElementById('pdfInput');
+      if (!input.files.length) return showToast('Seleccioná un PDF primero', 'error');
+
+      const form = new FormData();
+      form.append('file', input.files[0]);
+
+      try {
+        const res = await fetch('/api/knowledge/upload', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        showToast(`PDF indexado: ${data.chunk_count} fragmentos`);
+        input.value = '';
+        document.getElementById('pdfLabel').textContent = '📄 Seleccionar PDF...';
+        document.getElementById('pdfLabel').classList.remove('has-file');
+        loadDocuments();
+      } catch (e) {
+        showToast('Error al subir PDF', 'error');
+      }
+    }
+
+    async function addNote() {
+      const title = document.getElementById('noteTitle').value.trim();
+      const text = document.getElementById('noteText').value.trim();
+
+      if (!title || !text) return showToast('Completá título y contenido', 'error');
+
+      try {
+        const form = new FormData();
+        form.append('title', title);
+        form.append('text', text);
+        form.append('doc_type', 'note');
+
+        const res = await fetch('/api/knowledge/text', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('Failed');
+
+        showToast('Nota guardada');
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteText').value = '';
+        loadDocuments();
+      } catch (e) {
+        showToast('Error al guardar nota', 'error');
+      }
+    }
+
+    async function loadDocuments() {
+      try {
+        const docs = await api('/api/knowledge/documents');
+        const list = document.getElementById('docList');
+
+        if (docs.length === 0) {
+          list.innerHTML = '<li class="empty-docs">No hay documentos</li>';
+          return;
+        }
+
+        const TYPE_ICONS = { pdf: '📄', note: '📝', audio_transcript: '🎤', chat_history: '💬' };
+
+        list.innerHTML = docs.map(doc => `
+      <li class="doc-item">
+        <div class="doc-info">
+          <div class="doc-icon">${TYPE_ICONS[doc.doc_type] || '📄'}</div>
+          <div class="doc-meta">
+            <div class="name">${doc.filename}</div>
+            <div class="detail">${doc.chunk_count} fragmentos</div>
+          </div>
+        </div>
+        <button class="btn-danger" onclick="deleteDocument('${doc.id}')">Eliminar</button>
+      </li>
+    `).join('');
+      } catch (e) {
+        console.error('Failed to load documents:', e);
+      }
+    }
+
+    async function deleteDocument(docId) {
+      if (!confirm('¿Eliminar este documento?')) return;
+
+      try {
+        await api(`/api/knowledge/documents/${docId}`, { method: 'DELETE' });
+        showToast('Documento eliminado');
+        loadDocuments();
+      } catch (e) {
+        showToast('Error al eliminar', 'error');
+      }
+    }
+
+    // === UTILS ===
+    function updateFileLabel(inputId, labelId) {
+      const input = document.getElementById(inputId);
+      const label = document.getElementById(labelId);
+      if (input.files.length > 0) {
+        label.textContent = input.files[0].name;
+        label.classList.add('has-file');
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Start
+    init();
+  </script>
 </body>
+
 </html>
