@@ -287,6 +287,209 @@ input[type="file"] {
   font-size: 14px;
 }
 
+/* --- CONVERSATIONS TAB --- */
+.conv-layout {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 160px);
+  min-height: 400px;
+}
+
+.conv-list {
+  width: 280px;
+  min-width: 280px;
+  background: var(--wa-sidebar);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.conv-list-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--wa-border);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conv-list-items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.conv-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+.conv-item:hover { background: var(--wa-hover); }
+.conv-item.active { background: var(--wa-input-bg); }
+
+.conv-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.conv-dot.bot { background: #25D366; }
+.conv-dot.handoff_pending { background: #f56565; }
+.conv-dot.human { background: #f6ad55; }
+
+.conv-item-info { flex: 1; min-width: 0; }
+.conv-item-info .phone { font-size: 13px; font-weight: 500; }
+.conv-item-info .preview {
+  font-size: 12px;
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-item .mode-label {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.mode-label.handoff_pending { background: rgba(245,101,101,0.2); color: #f56565; }
+.mode-label.human { background: rgba(246,173,85,0.2); color: #f6ad55; }
+.mode-label.bot { background: rgba(37,211,102,0.15); color: #25D366; }
+
+.conv-detail {
+  flex: 1;
+  background: var(--wa-sidebar);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.conv-detail-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wa-text-secondary);
+  font-size: 14px;
+}
+
+.conv-detail-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--wa-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.conv-detail-header .info { flex: 1; }
+.conv-detail-header .phone { font-size: 14px; font-weight: 500; }
+.conv-detail-header .status { font-size: 12px; color: var(--wa-text-secondary); }
+.conv-detail-header .actions { display: flex; gap: 8px; }
+
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-sm:hover { opacity: 0.85; }
+.btn-sm.green { background: var(--wa-green); color: #fff; }
+.btn-sm.orange { background: #f6ad55; color: #111; }
+.btn-sm.red { background: #f56565; color: #fff; }
+
+.conv-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conv-msg {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+.conv-msg.user {
+  align-self: flex-end;
+  background: #005C4B;
+  border-top-right-radius: 0;
+}
+.conv-msg.assistant {
+  align-self: flex-start;
+  background: var(--wa-input-bg);
+  border-top-left-radius: 0;
+}
+.conv-msg.assistant .source-tag {
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.conv-msg.assistant .source-tag.bot { color: var(--wa-green); }
+.conv-msg.assistant .source-tag.human { color: #f6ad55; }
+.conv-msg.system-msg {
+  align-self: center;
+  background: rgba(255,255,255,0.08);
+  color: var(--wa-text-secondary);
+  font-size: 11px;
+  text-align: center;
+  max-width: 80%;
+}
+.conv-msg .time {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 2px;
+  text-align: right;
+}
+
+.conv-reply-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--wa-border);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.conv-reply-area input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 13px;
+  outline: none;
+}
+.conv-reply-area input::placeholder { color: var(--wa-text-secondary); }
+
+.tab .badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f56565;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 5px;
+  margin-left: 6px;
+}
+
+@media (max-width: 600px) {
+  .conv-layout { flex-direction: column; height: auto; }
+  .conv-list { width: 100%; min-width: unset; max-height: 250px; }
+}
+
 /* --- TOAST --- */
 .toast {
   position: fixed;
@@ -620,6 +823,7 @@ select:focus { border-color: var(--wa-green); }
     <button class="tab active" data-tab="personalidad" onclick="switchTab('personalidad')">Personalidad</button>
     <button class="tab" data-tab="conocimiento" onclick="switchTab('conocimiento')">Conocimiento</button>
     <button class="tab" data-tab="entrenamiento" onclick="switchTab('entrenamiento')">Entrenamiento</button>
+    <button class="tab" data-tab="conversaciones" id="tabConversaciones" onclick="switchTab('conversaciones')">Conversaciones</button>
   </div>
 
   <!-- TAB: PERSONALIDAD -->
@@ -918,6 +1122,35 @@ select:focus { border-color: var(--wa-green); }
       </div>
     </div>
   </div>
+
+  <!-- TAB: CONVERSACIONES -->
+  <div class="tab-content" id="tab-conversaciones">
+    <div class="conv-layout">
+      <!-- Left panel: session list -->
+      <div class="conv-list">
+        <div class="conv-list-header">Sesiones</div>
+        <div class="conv-list-items" id="convListItems"></div>
+      </div>
+      <!-- Right panel: chat detail -->
+      <div class="conv-detail" id="convDetail">
+        <div class="conv-detail-empty" id="convEmpty">Selecciona una conversacion</div>
+        <div id="convActive" style="display:none;flex:1;flex-direction:column;">
+          <div class="conv-detail-header">
+            <div class="info">
+              <div class="phone" id="convPhone"></div>
+              <div class="status" id="convStatus"></div>
+            </div>
+            <div class="actions" id="convActions"></div>
+          </div>
+          <div class="conv-messages" id="convMessages"></div>
+          <div class="conv-reply-area" id="convReplyArea">
+            <input type="text" id="convReplyInput" placeholder="Responder como operador..." onkeydown="if(event.key==='Enter')sendOperatorReply()">
+            <button class="btn-sm green" onclick="sendOperatorReply()">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -929,6 +1162,13 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
+
+  // Manage conversations polling
+  if (tabName === 'conversaciones') {
+    startConvPolling();
+  } else {
+    stopConvPolling();
+  }
 }
 
 // --- PROMPT EDITOR ---
@@ -1665,6 +1905,209 @@ function renderGreetingPatterns() {
   ).join('');
 }
 
+// --- CONVERSATIONS TAB ---
+let convSessions = [];
+let convSelectedId = null;
+let convPollTimer = null;
+let pendingPollTimer = null;
+
+const MODE_LABELS = {
+  bot: 'Bot',
+  handoff_pending: 'Pendiente',
+  human: 'Humano',
+};
+
+async function loadConvSessions() {
+  try {
+    const res = await fetch('/api/sessions');
+    convSessions = await res.json();
+    renderConvList();
+    // If a session is selected, refresh it too
+    if (convSelectedId) {
+      const still = convSessions.find(s => s.id === convSelectedId);
+      if (still) await loadConvDetail(convSelectedId);
+    }
+  } catch (e) {
+    console.error('Failed to load conv sessions:', e);
+  }
+}
+
+function renderConvList() {
+  const container = document.getElementById('convListItems');
+  if (!container) return;
+  // Sort: handoff_pending first, then human, then bot
+  const order = { handoff_pending: 0, human: 1, bot: 2 };
+  const sorted = [...convSessions].sort((a, b) => (order[a.mode] ?? 2) - (order[b.mode] ?? 2));
+
+  container.innerHTML = sorted.map(s => `
+    <div class="conv-item ${s.id === convSelectedId ? 'active' : ''}" onclick="selectConvSession('${s.id}')">
+      <div class="conv-dot ${s.mode || 'bot'}"></div>
+      <div class="conv-item-info">
+        <div class="phone">${escapeHtml(s.phone_number)}</div>
+        <div class="preview">${s.last_message ? escapeHtml(s.last_message) : 'Sin mensajes'}</div>
+      </div>
+      <span class="mode-label ${s.mode || 'bot'}">${MODE_LABELS[s.mode] || 'Bot'}</span>
+    </div>
+  `).join('');
+}
+
+async function selectConvSession(sessionId) {
+  convSelectedId = sessionId;
+  renderConvList();
+  await loadConvDetail(sessionId);
+}
+
+async function loadConvDetail(sessionId) {
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}`);
+    const session = await res.json();
+
+    document.getElementById('convEmpty').style.display = 'none';
+    const active = document.getElementById('convActive');
+    active.style.display = 'flex';
+
+    document.getElementById('convPhone').textContent = session.phone_number;
+    const statusParts = [MODE_LABELS[session.mode] || 'Bot'];
+    if (session.handoff_reason) statusParts.push(session.handoff_reason);
+    if (session.handoff_at) {
+      const d = new Date(session.handoff_at);
+      statusParts.push(d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+    }
+    document.getElementById('convStatus').textContent = statusParts.join(' · ');
+
+    // Render action buttons
+    const actions = document.getElementById('convActions');
+    if (session.mode === 'handoff_pending') {
+      actions.innerHTML = `<button class="btn-sm green" onclick="takeConversation()">Tomar conversacion</button>`;
+    } else if (session.mode === 'human') {
+      actions.innerHTML = `<button class="btn-sm orange" onclick="returnToBot()">Devolver al bot</button>`;
+    } else {
+      actions.innerHTML = `<button class="btn-sm red" onclick="manualHandoff()">Derivar manualmente</button>`;
+    }
+
+    // Render messages
+    const msgContainer = document.getElementById('convMessages');
+    msgContainer.innerHTML = session.messages.map(m => {
+      if (m.source === 'system') {
+        return `<div class="conv-msg system-msg">${escapeHtml(m.content)}<div class="time">${m.timestamp || ''}</div></div>`;
+      }
+      const roleClass = m.role === 'user' ? 'user' : 'assistant';
+      let sourceTag = '';
+      if (m.role === 'assistant' && m.source === 'human') {
+        sourceTag = `<div class="source-tag human">OPERADOR</div>`;
+      } else if (m.role === 'assistant' && m.source === 'bot') {
+        sourceTag = `<div class="source-tag bot">NICO</div>`;
+      }
+      return `<div class="conv-msg ${roleClass}">${sourceTag}${escapeHtml(m.content)}<div class="time">${m.timestamp || ''}</div></div>`;
+    }).join('');
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+
+    // Show/hide reply area
+    const replyArea = document.getElementById('convReplyArea');
+    replyArea.style.display = (session.mode === 'handoff_pending' || session.mode === 'human') ? 'flex' : 'none';
+  } catch (e) {
+    console.error('Failed to load conv detail:', e);
+  }
+}
+
+async function takeConversation() {
+  if (!convSelectedId) return;
+  try {
+    await fetch(`/api/sessions/${convSelectedId}/handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'human' }),
+    });
+    showToast('Conversacion tomada');
+    await loadConvSessions();
+  } catch (e) {
+    showToast('Error al tomar conversacion', 'error');
+  }
+}
+
+async function returnToBot() {
+  if (!convSelectedId) return;
+  try {
+    await fetch(`/api/sessions/${convSelectedId}/handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'bot' }),
+    });
+    showToast('Conversacion devuelta al bot');
+    await loadConvSessions();
+  } catch (e) {
+    showToast('Error al devolver', 'error');
+  }
+}
+
+async function manualHandoff() {
+  if (!convSelectedId) return;
+  try {
+    await fetch(`/api/sessions/${convSelectedId}/handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'handoff_pending', reason: 'Derivacion manual desde admin' }),
+    });
+    showToast('Sesion derivada');
+    await loadConvSessions();
+  } catch (e) {
+    showToast('Error al derivar', 'error');
+  }
+}
+
+async function sendOperatorReply() {
+  if (!convSelectedId) return;
+  const input = document.getElementById('convReplyInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  try {
+    await fetch(`/api/sessions/${convSelectedId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+    await loadConvDetail(convSelectedId);
+    await loadConvSessions();
+  } catch (e) {
+    showToast('Error al enviar respuesta', 'error');
+  }
+}
+
+async function pollPendingHandoffs() {
+  try {
+    const res = await fetch('/api/handoffs/pending');
+    const data = await res.json();
+    const tab = document.getElementById('tabConversaciones');
+    const existing = tab.querySelector('.badge-count');
+    if (data.count > 0) {
+      if (existing) {
+        existing.textContent = data.count;
+      } else {
+        const badge = document.createElement('span');
+        badge.className = 'badge-count';
+        badge.textContent = data.count;
+        tab.appendChild(badge);
+      }
+      document.title = `(${data.count}) Admin - La Formula`;
+    } else {
+      if (existing) existing.remove();
+      document.title = 'Admin - La Formula';
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function startConvPolling() {
+  stopConvPolling();
+  loadConvSessions();
+  convPollTimer = setInterval(loadConvSessions, 5000);
+}
+
+function stopConvPolling() {
+  if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
+}
+
 // --- INIT ---
 document.getElementById('systemPrompt').addEventListener('input', updatePromptStatus);
 loadPrompt();
@@ -1677,6 +2120,10 @@ loadModelParams();
 loadPromptVersions();
 loadTrainingMaterials();
 loadTestCases();
+
+// Start pending handoffs polling (always active)
+pollPendingHandoffs();
+pendingPollTimer = setInterval(pollPendingHandoffs, 10000);
 </script>
 </body>
 </html>

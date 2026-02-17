@@ -5,6 +5,8 @@ services:
       - "7070:7070"
     env_file:
       - .env
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./app:/app/app
       - ./config:/app/config

@@ -42,10 +42,10 @@ Via admin panel (Entrenamiento tab) or `POST /api/evaluations/run`.
 
 ### Module Responsibilities
 
-- **`app/main.py`** — FastAPI server, all HTTP routes, global state (agent, KB, config store, sessions dict). Routes cover: chat, sessions, config CRUD, knowledge base, images, training import, evaluations, introspection.
+- **`app/main.py`** — FastAPI server, all HTTP routes, global state (agent, KB, config store, sessions dict). Routes cover: chat, sessions, config CRUD, knowledge base, images, training import, evaluations, introspection, handoff endpoints.
 - **`app/agent.py`** — `WhatsAppAgent` class. Builds message arrays (system prompt + RAG context + history) and calls OpenRouter API via async httpx. Returns reply + debug info (tokens, RAG sources, full messages).
 - **`app/knowledge.py`** — `KnowledgeBase` wrapping ChromaDB. Ingests PDFs (PyMuPDF), text, WhatsApp chat exports. Chunks at ~500 chars. Search uses priority-weighted re-ranking: fetches 2x results, scores by `similarity * (1 + priority * 0.1)`, returns top-N.
-- **`app/models.py`** — Pydantic models: `ChatMessage`, `ChatSession`, `SendMessageRequest`, `NewSessionRequest`.
+- **`app/models.py`** — Pydantic models: `ChatMessage`, `ChatSession`, `SendMessageRequest`, `NewSessionRequest`, `HandoffRequest`, `OperatorReplyRequest`.
 - **`app/config.py`** — Loads YAML config from `CLIENT_CONFIG_PATH`, auto-injects product catalog into system prompt.
 - **`app/config_store.py`** — `ConfigStore` persists runtime config to `data/runtime_config.yaml`. Bootstraps from `config/config.yaml` if missing. Stores prompt versions (last 20) with rollback.
 - **`app/evaluator.py`** — `Evaluator` runs test cases from `training/evaluaciones/test-cases.yaml`. Rules: `must_contain`/`must_not_contain` (case-insensitive). Optional LLM judge (score 1-5, fail if <3).
@@ -57,12 +57,21 @@ Via admin panel (Entrenamiento tab) or `POST /api/evaluations/run`.
 
 1. `POST /api/chat` with `session_id` + `message`
 2. Session timeout check — clears history if inactive > N minutes
-3. Optional fixed greeting bypass (first message matching patterns → skip LLM)
-4. Knowledge base queried: top-5 chunks with priority re-ranking
-5. Agent builds message array: system prompt → session context → RAG context → history → user message
-6. Async POST to OpenRouter API
-7. Image marker post-processing (`[IMAGEN: ...]` → resolved URLs)
-8. Response saved to session and returned with optional debug info
+3. If session is in handoff/human mode → save message, skip LLM, return `handoff: true`
+4. Optional fixed greeting bypass (first message matching patterns → skip LLM)
+5. Knowledge base queried: top-5 chunks with priority re-ranking
+6. Agent builds message array: system prompt → session context → RAG context → history → user message
+7. Async POST to OpenRouter API
+8. Image marker post-processing (`[IMAGEN: ...]` → resolved URLs)
+9. `[HANDOFF]` tag detection — if present anywhere in reply, remove it and set session to `handoff_pending`
+10. Response saved to session and returned with optional debug info
+
+### Human Handoff
+
+Sessions have a `mode` field: `bot` | `handoff_pending` | `human`. The agent triggers handoff by including `[HANDOFF]` at the end of its reply (the tag is stripped before sending to the client). Operators manage handoffs via the Conversaciones tab in admin:
+- `POST /api/sessions/{id}/handoff` — change mode (handoff_pending/human/bot)
+- `POST /api/sessions/{id}/reply` — send operator message (source="human")
+- `GET /api/handoffs/pending` — list sessions awaiting operator
 
 ### Config Layering
 
@@ -71,8 +80,8 @@ Via admin panel (Entrenamiento tab) or `POST /api/evaluations/run`.
 ### Frontend
 
 Two vanilla HTML/JS/CSS pages (no build step):
-- **`app/static/index.html`** — WhatsApp-style chat UI with session sidebar, debug panel per message
-- **`app/static/admin.html`** — 3 tabs: Personalidad (prompt editor + versions), Conocimiento (KB docs + training import + images), Entrenamiento (model params + test cases + eval runner + introspection)
+- **`app/static/index.html`** — WhatsApp-style chat UI with session sidebar, debug panel per message, handoff banner
+- **`app/static/admin.html`** — 4 tabs: Personalidad (prompt editor + versions), Conocimiento (KB docs + training import + images), Entrenamiento (model params + test cases + eval runner + introspection), Conversaciones (handoff management with operator reply)
 
 ### Data Persistence
 

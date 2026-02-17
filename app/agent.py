@@ -1,6 +1,9 @@
 import time
+import logging
 import httpx
 from app.models import ChatMessage
+
+logger = logging.getLogger("app.agent")
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -25,8 +28,9 @@ class WhatsAppAgent:
         user_message: str,
         knowledge_base=None,
         prompt_context: str = "",
+        system_prompt_override: str | None = None,
     ) -> dict:
-        system_content = self.system_prompt
+        system_content = system_prompt_override if system_prompt_override is not None else self.system_prompt
         if (prompt_context or "").strip():
             system_content = system_content.rstrip() + "\n\n--- CONTEXTO ADICIONAL ---\n" + prompt_context.strip()
 
@@ -52,6 +56,16 @@ class WhatsAppAgent:
 
         messages.append({"role": "user", "content": user_message})
 
+        request_body = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
+        logger.debug("OpenRouter request: model=%s messages=%d temp=%.1f max_tokens=%d",
+                      self.model, len(messages), self.temperature, self.max_tokens)
+        logger.debug("OpenRouter request body: %s", request_body)
+
         t_start = time.monotonic()
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
@@ -60,19 +74,17 @@ class WhatsAppAgent:
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": self.model,
-                    "messages": messages,
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                },
+                json=request_body,
             )
             response.raise_for_status()
             data = response.json()
         t_end = time.monotonic()
+        elapsed_ms = round((t_end - t_start) * 1000)
 
         reply_text = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
+        logger.debug("OpenRouter response: %dms tokens=%s reply=%r",
+                      elapsed_ms, usage, reply_text)
 
         return {
             "reply": reply_text,
@@ -80,7 +92,7 @@ class WhatsAppAgent:
                 "model": self.model,
                 "temperature": self.temperature,
                 "max_tokens": self.max_tokens,
-                "response_time_ms": round((t_end - t_start) * 1000),
+                "response_time_ms": elapsed_ms,
                 "history_message_count": len(history),
                 "rag": {
                     "chunk_count": len(rag_chunks),

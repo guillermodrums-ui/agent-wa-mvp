@@ -1,16 +1,20 @@
 import uuid
 import random
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.config import load_client_config, OPENROUTER_API_KEY
-from app.models import ChatMessage, ChatSession, SendMessageRequest, NewSessionRequest
+from app.models import (
+    ChatMessage, ChatSession, SendMessageRequest, NewSessionRequest,
+    HandoffRequest, OperatorReplyRequest,
+)
 from app.agent import WhatsAppAgent
 from app.knowledge import KnowledgeBase
 from app.config_store import ConfigStore
@@ -18,6 +22,15 @@ from app.evaluator import Evaluator
 from app.introspector import Introspector
 from app import images as image_registry
 from app.image_processor import process_reply
+
+# --- Logging ---
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("app.main")
 
 # Load config and create agent
 client_config = load_client_config()
@@ -164,22 +177,30 @@ async def create_session(req: NewSessionRequest = NewSessionRequest()):
         id=session_id,
         phone_number=phone,
         prompt_context=default_prompt_context,
+        is_simulation=req.is_simulation,
     )
     sessions[session_id] = session
     return {"id": session_id, "phone_number": phone}
 
 
 @app.get("/api/sessions")
-async def list_sessions():
-    return [
-        {
+async def list_sessions(mode: str = Query(None), is_simulation: bool = Query(None)):
+    result = []
+    for s in sessions.values():
+        if mode and s.mode != mode:
+            continue
+        if is_simulation is not None and s.is_simulation != is_simulation:
+            continue
+        result.append({
             "id": s.id,
             "phone_number": s.phone_number,
             "last_message": s.messages[-1].content[:50] if s.messages else "",
             "message_count": len(s.messages),
-        }
-        for s in sessions.values()
-    ]
+            "mode": s.mode,
+            "handoff_reason": s.handoff_reason,
+            "handoff_at": s.handoff_at,
+        })
+    return result
 
 
 @app.get("/api/sessions/{session_id}")
@@ -290,11 +311,17 @@ async def send_message(req: SendMessageRequest):
     # Add user message
     user_msg = ChatMessage(role="user", content=req.message)
     session.messages.append(user_msg)
+    logger.debug("chat session=%s mode=%s message=%r", req.session_id, session.mode, req.message[:100])
     session.last_activity = datetime.now().isoformat()
 
     # Update session prompt_context if provided in request
     if req.prompt_context is not None:
         session.prompt_context = req.prompt_context
+
+    # If session is in handoff/human mode, save message but don't call LLM
+    if session.mode in ("handoff_pending", "human"):
+        logger.debug("chat session=%s skipped (mode=%s)", req.session_id, session.mode)
+        return {"reply": None, "mode": session.mode, "handoff": True}
 
     # Fixed greeting bypass — return exact text without LLM
     if greeting_config["enabled"] and greeting_config["text"].strip():
@@ -316,6 +343,7 @@ async def send_message(req: SendMessageRequest):
             req.message,
             knowledge_base=kb,
             prompt_context=getattr(session, "prompt_context", "") or "",
+            system_prompt_override=req.system_prompt_override,
         )
         reply = result["reply"]
         debug_info = result.get("debug")
@@ -326,16 +354,84 @@ async def send_message(req: SendMessageRequest):
     processed = process_reply(reply)
     clean_reply = processed["text"]
 
+    # Detect [HANDOFF] tag anywhere in reply and remove it.
+    # The full text (minus the tag) is the client-facing message.
+    handoff = False
+    if "[HANDOFF]" in clean_reply:
+        clean_reply = clean_reply.replace("[HANDOFF]", "").strip()
+        session.mode = "handoff_pending"
+        session.handoff_reason = "Derivado por Nico"
+        session.handoff_at = datetime.now().isoformat()
+        handoff = True
+        logger.info("handoff triggered session=%s reason='Derivado por Nico'", req.session_id)
+
     # Add assistant message (clean text, no markers)
-    assistant_msg = ChatMessage(role="assistant", content=clean_reply)
+    assistant_msg = ChatMessage(role="assistant", content=clean_reply, source="bot")
     session.messages.append(assistant_msg)
 
-    out = {"reply": clean_reply, "timestamp": assistant_msg.timestamp}
+    out = {"reply": clean_reply, "timestamp": assistant_msg.timestamp, "mode": session.mode, "handoff": handoff}
     if processed["images"]:
         out["images"] = processed["images"]
     if debug_info is not None:
         out["debug"] = debug_info
     return out
+
+
+# --- Handoff ---
+
+@app.post("/api/sessions/{session_id}/handoff")
+async def set_handoff(session_id: str, req: HandoffRequest):
+    session = sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if req.mode not in ("handoff_pending", "human", "bot"):
+        raise HTTPException(status_code=400, detail="Invalid mode")
+
+    session.mode = req.mode
+
+    if req.mode == "handoff_pending":
+        session.handoff_reason = req.reason or "Derivacion manual"
+        session.handoff_at = datetime.now().isoformat()
+        sys_msg = ChatMessage(role="assistant", content="[Sistema] Sesion derivada a un operador.", source="system")
+        session.messages.append(sys_msg)
+    elif req.mode == "bot":
+        session.handoff_reason = ""
+        session.handoff_at = ""
+        sys_msg = ChatMessage(role="assistant", content="[Sistema] Nico retomo la conversacion.", source="system")
+        session.messages.append(sys_msg)
+
+    return {"ok": True, "mode": session.mode}
+
+
+@app.post("/api/sessions/{session_id}/reply")
+async def operator_reply(session_id: str, req: OperatorReplyRequest):
+    session = sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.mode not in ("handoff_pending", "human"):
+        raise HTTPException(status_code=400, detail="Session is not in handoff mode")
+
+    if session.mode == "handoff_pending":
+        session.mode = "human"
+
+    msg = ChatMessage(role="assistant", content=req.message, source="human")
+    session.messages.append(msg)
+    return {"ok": True, "timestamp": msg.timestamp, "mode": session.mode}
+
+
+@app.get("/api/handoffs/pending")
+async def pending_handoffs():
+    pending = [
+        {
+            "id": s.id,
+            "phone_number": s.phone_number,
+            "handoff_reason": s.handoff_reason,
+            "handoff_at": s.handoff_at,
+        }
+        for s in sessions.values()
+        if s.mode in ("handoff_pending", "human")
+    ]
+    return {"count": len(pending), "sessions": pending}
 
 
 # --- Knowledge Base ---
