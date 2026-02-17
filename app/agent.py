@@ -84,7 +84,7 @@ class WhatsAppAgent:
         reply_text = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
         logger.debug("OpenRouter response: %dms tokens=%s reply=%r",
-                      elapsed_ms, usage, reply_text[:200])
+                      elapsed_ms, usage, reply_text)
 
         return {
             "reply": reply_text,

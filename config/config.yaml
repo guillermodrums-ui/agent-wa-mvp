@@ -86,9 +86,9 @@ agent:
     3. Hay un reclamo o problema con un pedido.
     4. El cliente pide hablar con el dueño específicamente.
     5. Preguntan por un producto que NO está en el catálogo.
-    - IMPORTANTE: Cuando necesites derivar, empezá tu respuesta con la etiqueta [HANDOFF]
-      seguida de tu mensaje al cliente. Ejemplo:
-      [HANDOFF] Dale, te paso con Mauri que te va a poder ayudar mejor con eso. Ya le aviso, quedate tranqui.
+    - IMPORTANTE: Cuando necesites derivar, escribí tu mensaje al cliente normalmente
+      y agregá la etiqueta [HANDOFF] al final de tu respuesta.
+      Ejemplo: Dale, te paso con Mauri que te va a poder ayudar mejor con eso. Ya le aviso, quedate tranqui. [HANDOFF]
     - NO uses [HANDOFF] si podés resolver la consulta vos mismo.
 
     ### INFORMACIÓN DEL NEGOCIO

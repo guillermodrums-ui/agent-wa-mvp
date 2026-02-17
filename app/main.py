@@ -354,18 +354,11 @@ async def send_message(req: SendMessageRequest):
     processed = process_reply(reply)
     clean_reply = processed["text"]
 
-    # Detect [HANDOFF] tag anywhere in reply
-    # The LLM may place it at the start, middle, or end.
-    # Everything after [HANDOFF] is an internal note to the operator — strip it from the client reply.
+    # Detect [HANDOFF] tag anywhere in reply and remove it.
+    # The full text (minus the tag) is the client-facing message.
     handoff = False
-    handoff_idx = clean_reply.find("[HANDOFF]")
-    if handoff_idx != -1:
-        # Keep only the client-facing part (before the tag)
-        client_part = clean_reply[:handoff_idx].strip()
-        # If there's nothing before the tag, use whatever comes after it
-        if not client_part:
-            client_part = clean_reply[handoff_idx + len("[HANDOFF]"):].strip()
-        clean_reply = client_part
+    if "[HANDOFF]" in clean_reply:
+        clean_reply = clean_reply.replace("[HANDOFF]", "").strip()
         session.mode = "handoff_pending"
         session.handoff_reason = "Derivado por Nico"
         session.handoff_at = datetime.now().isoformat()
