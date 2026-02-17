@@ -96,6 +96,8 @@ class KnowledgeBase:
                 "source": filename,
                 "type": "chat_history",
                 "chunk_index": i,
+                "category": "ejemplo-conversacion",
+                "priority": 3,
             })
 
         if ids:
@@ -109,7 +111,8 @@ class KnowledgeBase:
             "created_at": datetime.now().isoformat(),
         }
 
-    def _index_document(self, text: str, filename: str, doc_type: str) -> dict:
+    def _index_document(self, text: str, filename: str, doc_type: str,
+                        category: str = "", priority: int = 3) -> dict:
         """Chunk and index a document."""
         chunks = self._chunk_text(text)
         doc_id = str(uuid.uuid4())[:8]
@@ -127,6 +130,8 @@ class KnowledgeBase:
                 "source": filename,
                 "type": doc_type,
                 "chunk_index": i,
+                "category": category or doc_type,
+                "priority": priority,
             })
 
         if ids:
@@ -150,14 +155,15 @@ class KnowledgeBase:
         return results["documents"][0] if results["documents"] else []
 
     def search_with_debug(self, query: str, n_results: int = 5) -> dict:
-        """Search for relevant chunks and return debug metadata (sources, distances)."""
+        """Search for relevant chunks with priority re-ranking."""
         if self.collection.count() == 0:
             return {"chunks": [], "debug": []}
 
-        n = min(n_results, self.collection.count())
+        # Fetch double, then re-rank by priority-weighted score
+        fetch_n = min(n_results * 2, self.collection.count())
         results = self.collection.query(
             query_texts=[query],
-            n_results=n,
+            n_results=fetch_n,
             include=["documents", "metadatas", "distances"],
         )
 
@@ -165,20 +171,35 @@ class KnowledgeBase:
         metadatas = results["metadatas"][0] if results.get("metadatas") else []
         distances = results["distances"][0] if results.get("distances") else []
 
-        debug = []
+        # Build scored entries and re-rank
+        entries = []
         for i, chunk_text in enumerate(chunks):
             meta = metadatas[i] if i < len(metadatas) else {}
             dist = distances[i] if i < len(distances) else None
-            debug.append({
+            similarity = (1 - dist) if dist is not None else 0
+            priority = meta.get("priority", 3)
+            if not isinstance(priority, (int, float)):
+                priority = 3
+            score = similarity * (1 + priority * 0.1)
+            entries.append({
                 "text": chunk_text,
                 "source": meta.get("source", "desconocido"),
                 "type": meta.get("type", ""),
+                "category": meta.get("category", ""),
+                "priority": priority,
                 "chunk_index": meta.get("chunk_index", 0),
                 "distance": round(dist, 4) if dist is not None else None,
-                "similarity": round(1 - dist, 4) if dist is not None else None,
+                "similarity": round(similarity, 4),
+                "score": round(score, 4),
             })
 
-        return {"chunks": chunks, "debug": debug}
+        entries.sort(key=lambda e: e["score"], reverse=True)
+        entries = entries[:n_results]
+
+        return {
+            "chunks": [e["text"] for e in entries],
+            "debug": entries,
+        }
 
     def list_documents(self) -> list[dict]:
         """List all unique documents in the knowledge base."""
@@ -194,6 +215,8 @@ class KnowledgeBase:
                     "id": doc_id,
                     "filename": meta["source"],
                     "doc_type": meta["type"],
+                    "category": meta.get("category", ""),
+                    "priority": meta.get("priority", 3),
                     "chunk_count": 0,
                 }
             docs[doc_id]["chunk_count"] += 1
@@ -215,3 +238,28 @@ class KnowledgeBase:
             self.collection.delete(ids=ids_to_delete)
             return True
         return False
+
+    def update_document_metadata(self, doc_id: str, category: str = None, priority: int = None) -> bool:
+        """Update category/priority metadata for all chunks of a document."""
+        if self.collection.count() == 0:
+            return False
+
+        all_data = self.collection.get(include=["metadatas"])
+        target_ids = []
+        target_metas = []
+
+        for chunk_id, meta in zip(all_data["ids"], all_data["metadatas"]):
+            if meta.get("doc_id") == doc_id:
+                updated = dict(meta)
+                if category is not None:
+                    updated["category"] = category
+                if priority is not None:
+                    updated["priority"] = priority
+                target_ids.append(chunk_id)
+                target_metas.append(updated)
+
+        if not target_ids:
+            return False
+
+        self.collection.update(ids=target_ids, metadatas=target_metas)
+        return True

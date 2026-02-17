@@ -1,5 +1,8 @@
 import uuid
 import random
+import os
+from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
@@ -10,10 +13,27 @@ from app.config import load_client_config, OPENROUTER_API_KEY
 from app.models import ChatMessage, ChatSession, SendMessageRequest, NewSessionRequest
 from app.agent import WhatsAppAgent
 from app.knowledge import KnowledgeBase
+from app.config_store import ConfigStore
+from app.evaluator import Evaluator
+from app.introspector import Introspector
+from app import images as image_registry
+from app.image_processor import process_reply
 
 # Load config and create agent
 client_config = load_client_config()
 agent = WhatsAppAgent(api_key=OPENROUTER_API_KEY, config=client_config)
+
+# Persistent config store (data/runtime_config.yaml)
+config_store = ConfigStore(runtime_path="data/runtime_config.yaml", defaults=client_config)
+runtime = config_store.load()
+
+# Apply persisted runtime config to agent on startup
+agent.system_prompt = runtime.get("system_prompt", agent.system_prompt)
+agent.update_params(
+    model=runtime.get("model", agent.model),
+    temperature=runtime.get("temperature", agent.temperature),
+    max_tokens=runtime.get("max_tokens", agent.max_tokens),
+)
 
 # Knowledge base (ChromaDB with disk persistence)
 kb = KnowledgeBase(persist_dir="data/chroma")
@@ -21,10 +41,24 @@ kb = KnowledgeBase(persist_dir="data/chroma")
 # In-memory session storage
 sessions: dict[str, ChatSession] = {}
 
-# Default prompt context for new sessions (in-memory, lost on restart)
-default_prompt_context: str = ""
+# Default prompt context — loaded from persisted config
+default_prompt_context: str = runtime.get("prompt_context_default", "")
+
+# Session timeout — clears conversation context after inactivity
+session_timeout_minutes: int = runtime.get("session_timeout_minutes", 120)
+
+# Fixed greeting — bypasses LLM for first message in a session
+greeting_config = {
+    "enabled": runtime.get("greeting_enabled", True),
+    "text": runtime.get("greeting_text", ""),
+    "patterns": runtime.get("greeting_patterns", []),
+}
 
 app = FastAPI(title="La Fórmula - WhatsApp Agent MVP")
+
+# Serve product images (must be before /static)
+os.makedirs("data/images", exist_ok=True)
+app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -53,7 +87,7 @@ async def get_config():
     }
 
 
-# --- Prompt (in-memory) ---
+# --- Prompt (persisted) ---
 
 @app.get("/api/config/prompt")
 async def get_prompt():
@@ -69,7 +103,55 @@ async def update_prompt(req: UpdatePromptRequest):
     if not req.system_prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     agent.system_prompt = req.system_prompt
+    config_store.save_prompt(req.system_prompt)
     return {"ok": True}
+
+
+# --- Model Parameters (persisted) ---
+
+class UpdateModelParamsRequest(BaseModel):
+    model: str
+    temperature: float
+    max_tokens: int
+
+
+@app.get("/api/config/model-params")
+async def get_model_params():
+    return {
+        "model": agent.model,
+        "temperature": agent.temperature,
+        "max_tokens": agent.max_tokens,
+    }
+
+
+@app.put("/api/config/model-params")
+async def update_model_params(req: UpdateModelParamsRequest):
+    if not req.model.strip():
+        raise HTTPException(status_code=400, detail="Model cannot be empty")
+    if not (0.0 <= req.temperature <= 1.5):
+        raise HTTPException(status_code=400, detail="Temperature must be 0.0–1.5")
+    if not (50 <= req.max_tokens <= 4000):
+        raise HTTPException(status_code=400, detail="max_tokens must be 50–4000")
+    agent.update_params(req.model, req.temperature, req.max_tokens)
+    config_store.save_model_params(req.model, req.temperature, req.max_tokens)
+    return {"ok": True}
+
+
+# --- Prompt Versions ---
+
+@app.get("/api/config/prompt-versions")
+async def get_prompt_versions():
+    return config_store.get_prompt_versions()
+
+
+@app.post("/api/config/prompt-versions/{index}/restore")
+async def restore_prompt_version(index: int):
+    try:
+        text = config_store.restore_version(index)
+    except IndexError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    agent.system_prompt = text
+    return {"ok": True, "system_prompt": text}
 
 
 # --- Sessions ---
@@ -129,7 +211,7 @@ async def update_session_prompt_context(session_id: str, req: UpdatePromptContex
     return {"ok": True, "prompt_context": session.prompt_context}
 
 
-# --- Config: default prompt context (for new sessions) ---
+# --- Config: default prompt context (persisted) ---
 
 @app.get("/api/config/prompt-context")
 async def get_default_prompt_context():
@@ -140,7 +222,51 @@ async def get_default_prompt_context():
 async def update_default_prompt_context(req: UpdatePromptContextRequest):
     global default_prompt_context
     default_prompt_context = req.prompt_context or ""
+    config_store.save_default_context(default_prompt_context)
     return {"ok": True, "prompt_context": default_prompt_context}
+
+
+# --- Session Timeout (persisted) ---
+
+@app.get("/api/config/session-timeout")
+async def get_session_timeout():
+    return {"timeout_minutes": session_timeout_minutes}
+
+
+class UpdateSessionTimeoutRequest(BaseModel):
+    timeout_minutes: int
+
+
+@app.put("/api/config/session-timeout")
+async def update_session_timeout(req: UpdateSessionTimeoutRequest):
+    global session_timeout_minutes
+    if req.timeout_minutes < 1:
+        raise HTTPException(status_code=400, detail="Timeout must be at least 1 minute")
+    session_timeout_minutes = req.timeout_minutes
+    config_store.save_session_timeout(req.timeout_minutes)
+    return {"ok": True}
+
+
+# --- Fixed Greeting (persisted) ---
+
+@app.get("/api/config/greeting")
+async def get_greeting():
+    return greeting_config
+
+
+class UpdateGreetingRequest(BaseModel):
+    enabled: bool
+    text: str
+    patterns: list[str] = []
+
+
+@app.put("/api/config/greeting")
+async def update_greeting(req: UpdateGreetingRequest):
+    greeting_config["enabled"] = req.enabled
+    greeting_config["text"] = req.text
+    greeting_config["patterns"] = req.patterns
+    config_store.save_greeting(req.enabled, req.text, req.patterns)
+    return {"ok": True}
 
 
 # --- Chat (with RAG) ---
@@ -151,13 +277,36 @@ async def send_message(req: SendMessageRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Session timeout — clear old context if inactive too long
+    if session.messages:
+        try:
+            last = datetime.fromisoformat(session.last_activity)
+            elapsed = (datetime.now() - last).total_seconds() / 60
+            if elapsed >= session_timeout_minutes:
+                session.messages.clear()
+        except (ValueError, TypeError):
+            pass
+
     # Add user message
     user_msg = ChatMessage(role="user", content=req.message)
     session.messages.append(user_msg)
+    session.last_activity = datetime.now().isoformat()
 
     # Update session prompt_context if provided in request
     if req.prompt_context is not None:
         session.prompt_context = req.prompt_context
+
+    # Fixed greeting bypass — return exact text without LLM
+    if greeting_config["enabled"] and greeting_config["text"].strip():
+        is_first_message = len(session.messages) <= 1
+        if is_first_message:
+            patterns = greeting_config["patterns"]
+            msg_lower = req.message.strip().lower()
+            if not patterns or any(p.lower() in msg_lower for p in patterns):
+                reply = greeting_config["text"]
+                assistant_msg = ChatMessage(role="assistant", content=reply)
+                session.messages.append(assistant_msg)
+                return {"reply": reply, "timestamp": assistant_msg.timestamp}
 
     # Get agent response with RAG
     debug_info = None
@@ -173,11 +322,17 @@ async def send_message(req: SendMessageRequest):
     except Exception as e:
         reply = f"[Error del agente: {e}]"
 
-    # Add assistant message
-    assistant_msg = ChatMessage(role="assistant", content=reply)
+    # Post-process image markers
+    processed = process_reply(reply)
+    clean_reply = processed["text"]
+
+    # Add assistant message (clean text, no markers)
+    assistant_msg = ChatMessage(role="assistant", content=clean_reply)
     session.messages.append(assistant_msg)
 
-    out = {"reply": reply, "timestamp": assistant_msg.timestamp}
+    out = {"reply": clean_reply, "timestamp": assistant_msg.timestamp}
+    if processed["images"]:
+        out["images"] = processed["images"]
     if debug_info is not None:
         out["debug"] = debug_info
     return out
@@ -226,3 +381,191 @@ async def delete_document(doc_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"ok": True}
+
+
+@app.put("/api/knowledge/documents/{doc_id}/metadata")
+async def update_document_metadata(doc_id: str, req: dict):
+    category = req.get("category")
+    priority = req.get("priority")
+    updated = kb.update_document_metadata(doc_id, category=category, priority=priority)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"ok": True}
+
+
+# --- Product Images ---
+
+@app.post("/api/images/upload")
+async def upload_image(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    description: str = Form(""),
+    tags: str = Form(""),
+):
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+
+    file_bytes = await file.read()
+    original_filename = file.filename or "image.jpg"
+    entry = image_registry.add_image(file_bytes, original_filename, title.strip(), description.strip(), tags.strip())
+
+    # Index description in RAG so the agent knows the image exists
+    rag_text = (
+        f"IMAGEN DISPONIBLE: {title.strip()}\n"
+        f"Descripcion: {description.strip()}\n"
+        f"Tags: {tags.strip()}\n"
+        f"Para mostrar esta imagen en la respuesta, escribi: [IMAGEN: {title.strip()}]"
+    )
+    rag_result = kb.add_text(rag_text, f"img:{title.strip()}", "image")
+    entry["rag_doc_id"] = rag_result["id"]
+
+    return entry
+
+
+@app.get("/api/images")
+async def list_images():
+    return image_registry.list_images()
+
+
+@app.delete("/api/images/{image_id}")
+async def delete_image(image_id: str):
+    entry = image_registry.delete_image(image_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Remove from RAG: find doc with source "img:{title}"
+    rag_source = f"img:{entry['title']}"
+    docs = kb.list_documents()
+    for doc in docs:
+        if doc["filename"] == rag_source:
+            kb.delete_document(doc["id"])
+            break
+
+    return {"ok": True}
+
+
+# --- Training Materials ---
+
+TRAINING_DIR = Path("training")
+SUPPORTED_EXTENSIONS = {".txt", ".pdf", ".yaml", ".yml"}
+
+
+@app.get("/api/training/materials")
+async def list_training_materials():
+    if not TRAINING_DIR.exists():
+        return []
+
+    indexed_sources = {d["filename"] for d in kb.list_documents()}
+    files = []
+    exclude_dirs = {"evaluaciones"}
+    for path in sorted(TRAINING_DIR.rglob("*")):
+        if not path.is_file():
+            continue
+        if any(part in exclude_dirs for part in path.relative_to(TRAINING_DIR).parts):
+            continue
+        if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+        rel = str(path.relative_to(TRAINING_DIR))
+        file_type = "chat" if ".chat." in path.name.lower() else path.suffix.lstrip(".")
+        files.append({
+            "path": rel,
+            "type": file_type,
+            "imported": rel in indexed_sources,
+        })
+    return files
+
+
+class ImportTrainingRequest(BaseModel):
+    paths: list[str]
+
+
+@app.post("/api/training/import")
+async def import_training(req: ImportTrainingRequest):
+    imported = 0
+    for rel_path in req.paths:
+        full = TRAINING_DIR / rel_path
+        if not full.exists() or not full.is_file():
+            continue
+        # Prevent path traversal
+        try:
+            full.resolve().relative_to(TRAINING_DIR.resolve())
+        except ValueError:
+            continue
+
+        suffix = full.suffix.lower()
+        if suffix == ".pdf":
+            content = full.read_bytes()
+            kb.add_pdf(content, rel_path)
+        elif suffix in (".txt",):
+            text = full.read_text(encoding="utf-8", errors="ignore")
+            if ".chat." in full.name.lower():
+                kb.add_chat_export(text, rel_path)
+            else:
+                kb.add_text(text, rel_path, "training")
+        else:
+            continue
+        imported += 1
+    return {"imported": imported}
+
+
+# --- Evaluations ---
+
+evaluator = Evaluator(
+    agent=agent,
+    knowledge_base=kb,
+    test_cases_path="training/evaluaciones/test-cases.yaml",
+)
+
+introspector = Introspector(agent=agent, knowledge_base=kb)
+
+
+@app.get("/api/evaluations/test-cases")
+async def list_test_cases():
+    return evaluator.load_test_cases()
+
+
+class AddTestCaseRequest(BaseModel):
+    name: str
+    user_message: str
+    expected_behaviors: list[str]
+    tags: list[str] = []
+
+
+@app.post("/api/evaluations/test-cases")
+async def add_test_case(req: AddTestCaseRequest):
+    tc = evaluator.add_test_case(req.name, req.user_message, req.expected_behaviors, req.tags)
+    return tc
+
+
+class RunEvalRequest(BaseModel):
+    use_llm_judge: bool = False
+
+
+@app.post("/api/evaluations/run")
+async def run_all_evaluations(req: RunEvalRequest):
+    report = await evaluator.run_all(use_llm_judge=req.use_llm_judge)
+    return report
+
+
+@app.post("/api/evaluations/run/{test_id}")
+async def run_single_evaluation(test_id: str, req: RunEvalRequest):
+    cases = evaluator.load_test_cases()
+    tc = next((c for c in cases if c["id"] == test_id), None)
+    if not tc:
+        raise HTTPException(status_code=404, detail="Test case not found")
+    result = await evaluator.run_single(tc, use_llm_judge=req.use_llm_judge)
+    return result
+
+
+# --- Introspection ---
+
+class IntrospectRequest(BaseModel):
+    debug_snapshot: dict
+    introspection_history: list[dict] = []
+    question: str
+
+
+@app.post("/api/introspect")
+async def introspect(req: IntrospectRequest):
+    result = await introspector.ask(req.debug_snapshot, req.introspection_history, req.question)
+    return result

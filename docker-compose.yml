@@ -8,4 +8,5 @@ services:
     volumes:
       - ./app:/app/app
       - ./config:/app/config
-      - ./data/chroma:/app/data/chroma
+      - ./data:/app/data
+      - ./training:/app/training

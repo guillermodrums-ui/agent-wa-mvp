@@ -1,0 +1,56 @@
+[
+  {
+    "id": "f383af25",
+    "title": "Catalogo Inyectables",
+    "slug": "catalogo-inyectables",
+    "description": "Catálogo completo de inyectables SemideusPharma con precios",
+    "tags": "catalogo,productos",
+    "filename": "catalogo-inyectables-f383af25.jpeg",
+    "created_at": "2026-02-16T19:57:22.165977"
+  },
+  {
+    "id": "c35d0c9d",
+    "title": "Catalogo Orales",
+    "slug": "catalogo-orales",
+    "description": "Catálogo completo de productos orales con precios",
+    "tags": "catalogo,productos",
+    "filename": "catalogo-orales-c35d0c9d.jpeg",
+    "created_at": "2026-02-16T19:57:22.166493"
+  },
+  {
+    "id": "5e1c4e04",
+    "title": "Productos Exclusivos",
+    "slug": "productos-exclusivos",
+    "description": "Productos exclusivos La Fórmula Uruguay",
+    "tags": "catalogo,productos",
+    "filename": "productos-exclusivos-5e1c4e04.jpeg",
+    "created_at": "2026-02-16T19:57:22.167683"
+  },
+  {
+    "id": "44fcb322",
+    "title": "Perdida de Peso",
+    "slug": "perdida-de-peso",
+    "description": "Productos para pérdida de peso: Ozempic, Tirzepatida, Retatrutida",
+    "tags": "catalogo,productos",
+    "filename": "perdida-de-peso-44fcb322.jpeg",
+    "created_at": "2026-02-16T19:57:22.168300"
+  },
+  {
+    "id": "60060887",
+    "title": "Farmacos y TPC",
+    "slug": "farmacos-y-tpc",
+    "description": "Fármacos y productos para terapia post-ciclo",
+    "tags": "catalogo,productos",
+    "filename": "farmacos-y-tpc-60060887.jpeg",
+    "created_at": "2026-02-16T19:57:22.168870"
+  },
+  {
+    "id": "5125895c",
+    "title": "Testosterona Sin Agujas",
+    "slug": "testosterona-sin-agujas",
+    "description": "Opciones de testosterona sin agujas: Persy Blend, Oral, Gel",
+    "tags": "catalogo,productos",
+    "filename": "testosterona-sin-agujas-5125895c.jpeg",
+    "created_at": "2026-02-16T19:57:22.170241"
+  }
+]

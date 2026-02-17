@@ -184,6 +184,7 @@ body {
 
 .messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px 60px;
   display: flex;
@@ -223,6 +224,13 @@ body {
 .message.audio-msg {
   font-style: italic;
   color: var(--wa-text-secondary);
+}
+
+.message .msg-image {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 6px 0;
+  cursor: pointer;
 }
 
 .typing-indicator {
@@ -517,6 +525,147 @@ body {
   cursor: pointer;
 }
 .context-panel .btn-save-ctx:hover { background: var(--wa-hover); }
+
+/* --- INTROSPECTION PANEL --- */
+.introspection-toggle {
+  font-size: 11px;
+  opacity: 0.6;
+  color: #f0c040;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-left: 8px;
+  display: inline-block;
+}
+.introspection-toggle:hover { opacity: 1; }
+
+.introspection-panel {
+  display: none;
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(240, 192, 64, 0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(240, 192, 64, 0.25);
+  font-size: 13px;
+}
+.introspection-panel.open { display: block; }
+
+.introspection-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.quick-chip {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(240, 192, 64, 0.35);
+  background: rgba(240, 192, 64, 0.08);
+  color: #f0c040;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.quick-chip:hover { background: rgba(240, 192, 64, 0.18); }
+
+.introspection-chat {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+.introspection-msg {
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+.introspection-msg.admin {
+  color: var(--wa-text);
+  padding-left: 8px;
+  border-left: 2px solid var(--wa-green);
+}
+.introspection-msg.analyst {
+  color: var(--wa-text-secondary);
+  padding-left: 8px;
+  border-left: 2px solid #f0c040;
+  white-space: pre-wrap;
+}
+.introspection-msg .msg-label {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.introspection-msg.admin .msg-label { color: var(--wa-green); }
+.introspection-msg.analyst .msg-label { color: #f0c040; }
+
+.introspection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.action-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(240, 192, 64, 0.4);
+  background: rgba(240, 192, 64, 0.1);
+  color: #f0c040;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.action-btn:hover { background: rgba(240, 192, 64, 0.25); }
+.action-btn:disabled { opacity: 0.4; cursor: default; }
+
+.introspection-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.introspection-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 13px;
+  outline: none;
+}
+.introspection-input-row input::placeholder { color: var(--wa-text-secondary); }
+.introspection-input-row button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #f0c040;
+  color: #111;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.introspection-input-row button:hover { opacity: 0.85; }
+.introspection-input-row button:disabled { opacity: 0.4; cursor: default; }
+
+.introspection-loading {
+  color: var(--wa-text-secondary);
+  font-size: 12px;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--wa-green);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 200;
+  animation: toastFade 2.5s ease forwards;
+}
+@keyframes toastFade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -541,7 +690,7 @@ body {
       <p>Creá un nuevo chat para simular un cliente escribiéndole a <strong id="agentNameEmpty">Nico</strong> por WhatsApp.</p>
     </div>
 
-    <div id="activeChat" style="display:none; flex:1; flex-direction:column;">
+    <div id="activeChat" style="display:none; flex:1; flex-direction:column; min-height:0;">
       <div class="chat-header">
         <button class="btn-back" onclick="showSidebar()">←</button>
         <div class="avatar">🤖</div>
@@ -595,6 +744,11 @@ body {
 <script>
 let currentSessionId = null;
 let sessions = [];
+
+// --- Introspection data stores ---
+const messageDebugStore = new Map();    // msgId -> debugData
+const introspectionSessions = new Map(); // msgId -> [{role, content}]
+let msgCounter = 0;
 
 // --- API ---
 async function api(path, options = {}) {
@@ -701,7 +855,7 @@ async function sendMessage() {
     if (ctx) body.prompt_context = ctx;
     const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
     showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+    addMessageBubble('assistant', data.reply, data.timestamp, data.debug, data.images);
   } catch (e) {
     showTyping(false);
     addMessageBubble('assistant', '[Error al conectar con el agente]');
@@ -710,18 +864,38 @@ async function sendMessage() {
   await refreshSessions();
 }
 
-function addMessageBubble(role, content, time, debugData) {
+function addMessageBubble(role, content, time, debugData, images) {
   const container = document.getElementById('messages');
   const indicator = document.getElementById('typingIndicator');
   const div = document.createElement('div');
   div.className = `message ${role}`;
   if (content.startsWith('[🎤 Audio]')) div.classList.add('audio-msg');
 
+  const msgId = 'msg-' + (++msgCounter);
+  div.dataset.msgId = msgId;
+
+  // Store debug data for introspection
+  if (role === 'assistant' && debugData) {
+    // Also store the agent reply text in the snapshot for the introspector
+    debugData.agent_reply = content;
+    messageDebugStore.set(msgId, debugData);
+  }
+
   const now = time || new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  let html = `${escapeHtml(content)}<div class="time">${now}</div>`;
+  let html = `${escapeHtml(content)}`;
+
+  if (images && images.length > 0) {
+    images.forEach(img => {
+      html += `<img class="msg-image" src="${img.url}" alt="${escapeHtml(img.title)}" onclick="window.open('${img.url}','_blank')">`;
+    });
+  }
+
+  html += `<div class="time">${now}</div>`;
   if (role === 'assistant' && debugData) {
     html += `<a class="debug-toggle" onclick="toggleDebugPanel(this)">ver detalles</a>`;
+    html += `<a class="introspection-toggle" onclick="toggleIntrospectionPanel('${msgId}', this)">Analizar respuesta</a>`;
     html += `<div class="debug-panel" id="debug-${Date.now()}">${buildDebugHtml(debugData)}</div>`;
+    html += `<div class="introspection-panel" id="intro-${msgId}"></div>`;
   }
   div.innerHTML = html;
   container.insertBefore(div, indicator);
@@ -773,7 +947,7 @@ async function sendAudio() {
     if (ctx) body.prompt_context = ctx;
     const data = await api('/api/chat', { method: 'POST', body: JSON.stringify(body) });
     showTyping(false);
-    addMessageBubble('assistant', data.reply, data.timestamp, data.debug);
+    addMessageBubble('assistant', data.reply, data.timestamp, data.debug, data.images);
   } catch (e) {
     showTyping(false);
     addMessageBubble('assistant', '[Error al conectar con el agente]');
@@ -820,8 +994,8 @@ function buildDebugHtml(debug) {
 }
 
 function toggleDebugPanel(el) {
-  const panel = el.nextElementSibling;
-  if (!panel || !panel.classList.contains('debug-panel')) return;
+  const panel = el.parentElement.querySelector('.debug-panel');
+  if (!panel) return;
   panel.classList.toggle('open');
   el.textContent = panel.classList.contains('open') ? 'ocultar detalles' : 'ver detalles';
 }
@@ -868,6 +1042,176 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+
+// --- INTROSPECTION ---
+
+function toggleIntrospectionPanel(msgId, toggleEl) {
+  const panel = document.getElementById('intro-' + msgId);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+
+  if (isOpen) {
+    panel.classList.remove('open');
+    toggleEl.textContent = 'Analizar respuesta';
+  } else {
+    panel.classList.add('open');
+    toggleEl.textContent = 'Cerrar analisis';
+    if (!panel.dataset.initialized) {
+      initIntrospectionPanel(msgId, panel);
+      panel.dataset.initialized = '1';
+    }
+  }
+  const container = document.getElementById('messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function initIntrospectionPanel(msgId, panel) {
+  const chatId = 'intro-chat-' + msgId;
+  const inputId = 'intro-input-' + msgId;
+
+  panel.innerHTML = `
+    <div class="introspection-chips">
+      <span class="quick-chip" onclick="sendIntrospectionQuestion('${msgId}', 'Por que respondiste asi?')">Por que respondiste asi?</span>
+      <span class="quick-chip" onclick="sendIntrospectionQuestion('${msgId}', 'Que chunks RAG usaste?')">Que chunks RAG usaste?</span>
+      <span class="quick-chip" onclick="sendIntrospectionQuestion('${msgId}', 'Como mejoro esta respuesta?')">Como mejoro esta respuesta?</span>
+    </div>
+    <div class="introspection-chat" id="${chatId}"></div>
+    <div class="introspection-input-row">
+      <input type="text" id="${inputId}" placeholder="Preguntale al analista..." onkeydown="if(event.key==='Enter')sendIntrospectionQuestion('${msgId}')">
+      <button onclick="sendIntrospectionQuestion('${msgId}')">Preguntar</button>
+    </div>
+  `;
+}
+
+async function sendIntrospectionQuestion(msgId, question) {
+  const inputEl = document.getElementById('intro-input-' + msgId);
+  const q = question || (inputEl ? inputEl.value.trim() : '');
+  if (!q) return;
+  if (inputEl) inputEl.value = '';
+
+  const chatEl = document.getElementById('intro-chat-' + msgId);
+  if (!chatEl) return;
+
+  const debug = messageDebugStore.get(msgId);
+  if (!debug) return;
+
+  // Initialize session history if needed
+  if (!introspectionSessions.has(msgId)) {
+    introspectionSessions.set(msgId, []);
+  }
+  const history = introspectionSessions.get(msgId);
+
+  // Render user question
+  chatEl.innerHTML += `
+    <div class="introspection-msg admin">
+      <div class="msg-label">Admin</div>
+      ${escapeHtml(q)}
+    </div>
+  `;
+  chatEl.innerHTML += `<div class="introspection-loading" id="intro-loading-${msgId}">Analizando...</div>`;
+  chatEl.scrollTop = chatEl.scrollHeight;
+
+  // Disable input while loading
+  const btn = chatEl.parentElement.querySelector('.introspection-input-row button');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await api('/api/introspect', {
+      method: 'POST',
+      body: JSON.stringify({
+        debug_snapshot: debug,
+        introspection_history: history,
+        question: q,
+      }),
+    });
+
+    // Update conversation history
+    history.push({ role: 'user', content: q });
+    history.push({ role: 'assistant', content: res.answer });
+
+    // Remove loading indicator
+    const loadingEl = document.getElementById('intro-loading-' + msgId);
+    if (loadingEl) loadingEl.remove();
+
+    // Render analyst response
+    chatEl.innerHTML += `
+      <div class="introspection-msg analyst">
+        <div class="msg-label">Analista</div>
+        ${escapeHtml(res.answer)}
+      </div>
+    `;
+
+    // Render action buttons
+    if (res.actions && res.actions.length > 0) {
+      let actionsHtml = '<div class="introspection-actions">';
+      res.actions.forEach((action, idx) => {
+        const actionData = escapeHtml(JSON.stringify(action));
+        actionsHtml += `<button class="action-btn" data-action='${JSON.stringify(action).replace(/'/g, "&#39;")}' onclick="applyIntrospectionAction(this)">${escapeHtml(action.label)}</button>`;
+      });
+      actionsHtml += '</div>';
+      chatEl.innerHTML += actionsHtml;
+    }
+  } catch (e) {
+    const loadingEl = document.getElementById('intro-loading-' + msgId);
+    if (loadingEl) loadingEl.remove();
+    chatEl.innerHTML += `
+      <div class="introspection-msg analyst">
+        <div class="msg-label">Error</div>
+        No se pudo analizar: ${escapeHtml(e.message)}
+      </div>
+    `;
+  }
+
+  if (btn) btn.disabled = false;
+  chatEl.scrollTop = chatEl.scrollHeight;
+  const container = document.getElementById('messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function applyIntrospectionAction(btnEl) {
+  let action;
+  try {
+    action = JSON.parse(btnEl.dataset.action);
+  } catch (e) { return; }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Aplicando...';
+
+  try {
+    if (action.type === 'edit_prompt') {
+      // Get current prompt, append text, save
+      const current = await api('/api/config/prompt');
+      const newPrompt = current.system_prompt.trimEnd() + '\n' + action.params.append;
+      await api('/api/config/prompt', {
+        method: 'POST',
+        body: JSON.stringify({ system_prompt: newPrompt }),
+      });
+      showToast('Regla agregada al prompt');
+    } else if (action.type === 'delete_rag_doc') {
+      await api(`/api/knowledge/documents/${action.params.doc_id}`, { method: 'DELETE' });
+      showToast('Documento eliminado del RAG');
+    } else if (action.type === 'update_rag_priority') {
+      await api(`/api/knowledge/documents/${action.params.doc_id}/metadata`, {
+        method: 'PUT',
+        body: JSON.stringify({ priority: action.params.priority }),
+      });
+      showToast('Prioridad actualizada');
+    }
+    btnEl.textContent = 'Aplicado';
+  } catch (e) {
+    btnEl.textContent = 'Error';
+    btnEl.disabled = false;
+  }
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
 }
 
 // --- START ---

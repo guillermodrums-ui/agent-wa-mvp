@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements). The agent is called **"Nico"** and uses a local web-based WhatsApp simulator before real WhatsApp API integration. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval.
+WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements + pharmaceuticals). The agent is called **"Nico"** and communicates in **Argentine Spanish**. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval. Maintain Argentine Spanish dialect in any prompt or user-facing text changes.
 
 ## Commands
 
 ### Run with Docker (recommended)
 ```bash
 docker compose up --build
-# App at http://localhost:7070
+# Chat UI: http://localhost:7070
+# Admin panel: http://localhost:7070/admin
 ```
 
 ### Run locally
@@ -20,57 +21,85 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 7070
 ```
 
-Requires `.env` with `OPENROUTER_API_KEY` and `CLIENT_CONFIG_PATH=config/config.yaml` (see `.env.example`).
+Requires `.env` with `OPENROUTER_API_KEY` (see `.env.example`).
 
-### No test framework configured yet
+### Import catalog to RAG (with server running)
+```bash
+bash scripts/import-catalogo-rag.sh
+```
+
+### Reset data (deletes ChromaDB, images, sessions, runtime config)
+```bash
+bash reset.sh
+```
+
+### Run evaluation test suite
+Via admin panel (Entrenamiento tab) or `POST /api/evaluations/run`.
+
+### No automated test framework configured yet
 
 ## Architecture
 
 ### Module Responsibilities
 
-- **`app/main.py`** — FastAPI server, all HTTP routes, session orchestration. Holds global state: agent instance, knowledge base, and in-memory sessions dict.
-- **`app/agent.py`** — `WhatsAppAgent` class. Constructs message payloads (system prompt + RAG context + history) and calls OpenRouter API asynchronously via httpx.
-- **`app/knowledge.py`** — `KnowledgeBase` class wrapping ChromaDB. Handles document ingestion (PDF via PyMuPDF, text, WhatsApp chat exports), chunking, semantic search (top-5 results), and document management.
+- **`app/main.py`** — FastAPI server, all HTTP routes, global state (agent, KB, config store, sessions dict). Routes cover: chat, sessions, config CRUD, knowledge base, images, training import, evaluations, introspection.
+- **`app/agent.py`** — `WhatsAppAgent` class. Builds message arrays (system prompt + RAG context + history) and calls OpenRouter API via async httpx. Returns reply + debug info (tokens, RAG sources, full messages).
+- **`app/knowledge.py`** — `KnowledgeBase` wrapping ChromaDB. Ingests PDFs (PyMuPDF), text, WhatsApp chat exports. Chunks at ~500 chars. Search uses priority-weighted re-ranking: fetches 2x results, scores by `similarity * (1 + priority * 0.1)`, returns top-N.
 - **`app/models.py`** — Pydantic models: `ChatMessage`, `ChatSession`, `SendMessageRequest`, `NewSessionRequest`.
-- **`app/config.py`** — Loads YAML config from `CLIENT_CONFIG_PATH`, auto-injects product catalog into the system prompt.
-- **`config/config.yaml`** — All business-specific config: business info, agent personality/system prompt, model settings, discount rules.
+- **`app/config.py`** — Loads YAML config from `CLIENT_CONFIG_PATH`, auto-injects product catalog into system prompt.
+- **`app/config_store.py`** — `ConfigStore` persists runtime config to `data/runtime_config.yaml`. Bootstraps from `config/config.yaml` if missing. Stores prompt versions (last 20) with rollback.
+- **`app/evaluator.py`** — `Evaluator` runs test cases from `training/evaluaciones/test-cases.yaml`. Rules: `must_contain`/`must_not_contain` (case-insensitive). Optional LLM judge (score 1-5, fail if <3).
+- **`app/introspector.py`** — `Introspector` analyzes agent responses using debug snapshots. Returns explanation + actionable suggestions (edit_prompt, delete_rag_doc, update_rag_priority).
+- **`app/images.py`** — Product image registry (filesystem + `data/images/registry.json`). Fuzzy title matching via slug comparison.
+- **`app/image_processor.py`** — Post-processes agent replies: resolves `[IMAGEN: Title]` markers to image URLs.
 
-### Request Flow
+### Chat Request Flow
 
-1. User sends message via web UI → `POST /api/chat` with `session_id` + `message`
-2. Message appended to in-memory session history
-3. Knowledge base queried for top-5 semantically relevant chunks
-4. Agent builds message array: system prompt → KB context → conversation history → new message
-5. Async POST to OpenRouter API (`deepseek/deepseek-chat`)
-6. Response saved to session and returned to frontend
+1. `POST /api/chat` with `session_id` + `message`
+2. Session timeout check — clears history if inactive > N minutes
+3. Optional fixed greeting bypass (first message matching patterns → skip LLM)
+4. Knowledge base queried: top-5 chunks with priority re-ranking
+5. Agent builds message array: system prompt → session context → RAG context → history → user message
+6. Async POST to OpenRouter API
+7. Image marker post-processing (`[IMAGEN: ...]` → resolved URLs)
+8. Response saved to session and returned with optional debug info
+
+### Config Layering
+
+`config/config.yaml` (factory defaults) → `data/runtime_config.yaml` (user edits via admin panel). Runtime file is auto-created from factory defaults on first run. All admin panel changes (prompt, model params, greeting, timeout) persist to runtime config.
 
 ### Frontend
 
-Two vanilla HTML/JS/CSS pages served as static files (no build step):
-- **`app/static/index.html`** — WhatsApp-style chat UI with sidebar for session management
-- **`app/static/admin.html`** — Knowledge base admin panel (upload PDFs, add text/notes, import WhatsApp exports, manage documents)
+Two vanilla HTML/JS/CSS pages (no build step):
+- **`app/static/index.html`** — WhatsApp-style chat UI with session sidebar, debug panel per message
+- **`app/static/admin.html`** — 3 tabs: Personalidad (prompt editor + versions), Conocimiento (KB docs + training import + images), Entrenamiento (model params + test cases + eval runner + introspection)
 
 ### Data Persistence
 
-- **Sessions**: In-memory dict (lost on restart — intentional for MVP)
-- **Knowledge base**: ChromaDB persisted to `data/chroma/` (survives restarts via Docker volume)
+| Storage | Location | Survives restart |
+|---------|----------|-----------------|
+| Sessions | In-memory dict | No |
+| Knowledge base (ChromaDB) | `data/chroma/` | Yes |
+| Product images | `data/images/` | Yes |
+| Runtime config | `data/runtime_config.yaml` | Yes |
+| Test cases | `training/evaluaciones/test-cases.yaml` | Yes |
 
 ### Docker
 
-- `docker-compose.yml` mounts three volumes for development: `app/` (code hot-reload), `config/` (runtime config changes), `data/chroma/` (vector DB persistence)
-- Port 7070. `PORT` env var supported for cloud platforms (Railway, Render).
+Single service on port 7070. Mounts `app/`, `config/`, `data/`, `training/` as volumes for hot-reload and persistence.
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for LLM access |
-| `CLIENT_CONFIG_PATH` | Yes | Path to client YAML config (default: `config/config.yaml`) |
-| `PORT` | No | Server port (default: `7070`) |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENROUTER_API_KEY` | Yes | — | OpenRouter API key |
+| `CLIENT_CONFIG_PATH` | No | `config/config.yaml` | Business config path |
+| `PORT` | No | `7070` | Server port |
 
 ## Key Design Decisions
 
-- **Configuration-driven**: Business logic, agent personality, and product catalog all live in `config/config.yaml` — same codebase can serve different clients.
-- **RAG over stuffing**: Product knowledge is indexed in ChromaDB rather than always included in the prompt, reducing token cost per message.
+- **Configuration-driven**: Business logic, personality, products all in YAML — same codebase serves different clients.
+- **RAG with priority re-ranking**: Documents have `category` + `priority` (1-5) metadata. Higher priority docs score higher in retrieval.
 - **All async**: FastAPI + httpx for non-blocking I/O throughout.
-- **Spanish (Argentine dialect)**: The agent speaks in Argentine Spanish with natural speech patterns — maintain this in any prompt changes.
+- **Debug-first**: Every agent response includes full debug snapshot (prompt sent, RAG chunks with scores, token usage) for introspection.
+- **Two-tier config**: Factory defaults in `config/` (version controlled) vs runtime edits in `data/` (user's working copy).
