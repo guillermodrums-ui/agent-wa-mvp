@@ -507,11 +507,307 @@ input[type="file"] {
 .toast.success { background: var(--wa-green); color: #fff; }
 .toast.error { background: #f56565; color: #fff; }
 
+/* --- MODEL PARAMS --- */
+.param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.param-grid .full-width { grid-column: 1 / -1; }
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--wa-green);
+}
+.slider-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wa-green);
+  min-width: 36px;
+  text-align: center;
+}
+
+input[type="number"] {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+input[type="number"]:focus { border-color: var(--wa-green); }
+
+select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--wa-border);
+  background: var(--wa-input-bg);
+  color: var(--wa-text);
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+select:focus { border-color: var(--wa-green); }
+
+/* --- PROMPT VERSIONS --- */
+.version-list { list-style: none; max-height: 300px; overflow-y: auto; }
+.version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.version-item:last-child { border-bottom: none; }
+.version-info { flex: 1; min-width: 0; }
+.version-time {
+  font-size: 12px;
+  color: var(--wa-text-secondary);
+  margin-bottom: 2px;
+}
+.version-preview {
+  font-size: 13px;
+  color: var(--wa-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--wa-border);
+  background: none;
+  color: var(--wa-green);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+.btn-sm:hover { background: rgba(37,211,102,0.1); }
+
+/* --- EVAL RESULTS --- */
+.eval-table { width: 100%; border-collapse: collapse; }
+.eval-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wa-text-secondary);
+  border-bottom: 1px solid var(--wa-border);
+}
+.eval-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  vertical-align: top;
+}
+.eval-table tr:last-child td { border-bottom: none; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge.pass { background: rgba(37,211,102,0.15); color: #25D366; }
+.badge.fail { background: rgba(245,101,101,0.15); color: #f56565; }
+.badge.pending { background: rgba(134,150,160,0.15); color: #8696A0; }
+
+.eval-detail {
+  display: none;
+  padding: 10px 12px;
+  background: var(--wa-input-bg);
+  border-radius: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.eval-detail.open { display: block; }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.toggle-label {
+  font-size: 13px;
+  color: var(--wa-text-secondary);
+}
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--wa-input-bg);
+  border-radius: 24px;
+  transition: 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: var(--wa-text-secondary);
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--wa-green); }
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+.eval-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.eval-summary .stat { font-weight: 600; }
+.eval-summary .stat.green { color: var(--wa-green); }
+.eval-summary .stat.red { color: #f56565; }
+
+.judge-info {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(37,211,102,0.08);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--wa-text-secondary);
+}
+.judge-score {
+  font-weight: 600;
+  color: var(--wa-green);
+}
+
+/* --- ADD TEST CASE FORM --- */
+.tc-form { margin-top: 16px; }
+.tc-behaviors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tc-behavior-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tc-behavior-row select {
+  width: 160px;
+  flex-shrink: 0;
+}
+.tc-behavior-row input { flex: 1; }
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--wa-border);
+  background: none;
+  color: var(--wa-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover { border-color: var(--wa-green); color: var(--wa-green); }
+
+/* --- IMAGE GALLERY --- */
+.img-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.img-card {
+  background: var(--wa-input-bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.img-card .thumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+
+.img-card .img-info {
+  padding: 8px 10px;
+}
+
+.img-card .img-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.img-card .img-desc {
+  font-size: 11px;
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.img-card .img-actions {
+  padding: 0 10px 8px;
+}
+
+/* --- GREETING CHIPS --- */
+.greeting-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--wa-input-bg);
+  border: 1px solid var(--wa-border);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--wa-text);
+}
+.greeting-chip button {
+  background: none;
+  border: none;
+  color: var(--wa-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.greeting-chip button:hover { color: #f56565; }
+
 /* --- RESPONSIVE --- */
 @media (max-width: 600px) {
   .container { padding: 12px; }
   .form-row { flex-direction: column; }
   .tab { padding: 10px 16px; font-size: 13px; }
+  .param-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -526,6 +822,7 @@ input[type="file"] {
   <div class="tabs">
     <button class="tab active" data-tab="personalidad" onclick="switchTab('personalidad')">Personalidad</button>
     <button class="tab" data-tab="conocimiento" onclick="switchTab('conocimiento')">Conocimiento</button>
+    <button class="tab" data-tab="entrenamiento" onclick="switchTab('entrenamiento')">Entrenamiento</button>
     <button class="tab" data-tab="conversaciones" id="tabConversaciones" onclick="switchTab('conversaciones')">Conversaciones</button>
   </div>
 
@@ -553,6 +850,44 @@ input[type="file"] {
           <textarea id="defaultPromptContext" class="prompt-textarea" placeholder="Ej: El cliente de esta sesion es Juan, prefiere que le hablen de vos. Hoy hay 10% de descuento en creatina." style="min-height:120px;"></textarea>
         </div>
         <button class="btn btn-primary" onclick="saveDefaultPromptContext()">Guardar contexto por defecto</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Timeout de sesion</h2>
+      <p class="desc">Si pasan mas de estos minutos sin mensajes, la proxima interaccion arranca como conversacion nueva (se limpia el historial enviado al modelo).</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <input type="number" id="sessionTimeout" min="1" max="1440" value="120" style="width:100px;">
+        <span style="font-size:13px;color:var(--wa-text-secondary);">minutos</span>
+        <button class="btn btn-primary" onclick="saveSessionTimeout()">Guardar</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Saludo Inicial Fijo</h2>
+      <p class="desc">Texto exacto que se envia como respuesta al primer mensaje de cada sesion nueva, sin pasar por el LLM. Ideal para catalogos con URLs largas que el modelo podria alterar.</p>
+      <div class="form-row vertical" style="gap: 12px;">
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="greetingEnabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Activar saludo fijo</span>
+        </div>
+        <div>
+          <label>Texto del saludo</label>
+          <textarea id="greetingText" class="prompt-textarea" style="min-height:160px;" placeholder="Pega aca el catalogo completo con URLs, links de WhatsApp, Instagram, etc."></textarea>
+        </div>
+        <div>
+          <label>Palabras clave que activan el saludo (opcional)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="greetingPatternInput" placeholder="Ej: hola, buenas, buen dia">
+            <button class="btn btn-primary" onclick="addGreetingPattern()" style="flex-shrink:0;">Agregar</button>
+          </div>
+          <p class="desc" style="margin-top:6px;margin-bottom:6px;">Si la lista esta vacia, el primer mensaje de cualquier sesion nueva recibe este saludo.</p>
+          <div id="greetingPatterns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveGreetingConfig()" style="align-self:flex-end;">Guardar saludo</button>
       </div>
     </div>
   </div>
@@ -621,12 +956,170 @@ input[type="file"] {
       </div>
     </div>
 
+    <!-- Product Images -->
+    <div class="section">
+      <h2>Imagenes de productos</h2>
+      <p class="desc">Subir imagenes de catalogo/productos. El agente las adjunta automaticamente cuando el cliente pregunta por un producto.</p>
+      <div class="form-row vertical" style="gap: 10px;">
+        <div>
+          <label>Imagen</label>
+          <label class="file-label" id="imgLabel" for="imgInput">Seleccionar imagen...</label>
+          <input type="file" id="imgInput" accept="image/*" onchange="updateFileLabel('imgInput','imgLabel')">
+        </div>
+        <div>
+          <label>Titulo (asi lo busca el agente)</label>
+          <input type="text" id="imgTitle" placeholder="Ej: Catalogo Inyectables">
+        </div>
+        <div>
+          <label>Descripcion</label>
+          <textarea id="imgDesc" style="min-height: 60px;" placeholder="Ej: Lista de precios de inyectables: Propionato, Enantato, Cipionato..."></textarea>
+        </div>
+        <div>
+          <label>Tags (separados por coma)</label>
+          <input type="text" id="imgTags" placeholder="Ej: inyectables, precios, catalogo">
+        </div>
+        <button class="btn btn-primary" onclick="uploadImage()" style="align-self:flex-end;">Subir imagen</button>
+      </div>
+      <div class="img-gallery" id="imgGallery"></div>
+    </div>
+
     <!-- Documents list -->
     <div class="docs-section">
       <h2>Documentos indexados <span class="doc-count" id="docCount">0</span></h2>
       <ul class="doc-list" id="docList">
         <li class="empty-docs">No hay documentos. Subi archivos para que Nico los use como contexto.</li>
       </ul>
+    </div>
+
+    <!-- Import from training/ -->
+    <div class="section" style="margin-top: 16px;">
+      <h2>Importar desde training/</h2>
+      <p class="desc">Archivos en la carpeta training/ que se pueden importar al RAG.</p>
+      <div id="trainingMaterials">
+        <p style="color: var(--wa-text-secondary); font-size: 13px;">Cargando...</p>
+      </div>
+      <button class="btn btn-primary" onclick="importSelectedTraining()" style="margin-top: 12px;" id="btnImportTraining" disabled>Importar seleccionados</button>
+    </div>
+  </div>
+
+  <!-- TAB: ENTRENAMIENTO -->
+  <div class="tab-content" id="tab-entrenamiento">
+    <!-- Model params -->
+    <div class="section">
+      <h2>Parametros del modelo</h2>
+      <p class="desc">Ajustar modelo, temperatura y tokens maximos. Los cambios persisten entre reinicios.</p>
+      <div class="param-grid">
+        <div>
+          <label>Modelo</label>
+          <select id="modelSelect">
+            <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
+            <option value="deepseek/deepseek-reasoner">deepseek/deepseek-reasoner</option>
+            <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+            <option value="openai/gpt-4o">openai/gpt-4o</option>
+            <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet</option>
+            <option value="custom">Otro (escribir)</option>
+          </select>
+        </div>
+        <div id="customModelWrap" style="display:none;">
+          <label>Modelo personalizado</label>
+          <input type="text" id="customModel" placeholder="provider/model-name">
+        </div>
+        <div>
+          <label>Temperatura</label>
+          <div class="slider-row">
+            <input type="range" id="tempSlider" min="0" max="1.5" step="0.1" value="0.7">
+            <span class="slider-value" id="tempValue">0.7</span>
+          </div>
+        </div>
+        <div>
+          <label>Max tokens</label>
+          <input type="number" id="maxTokensInput" min="50" max="4000" step="50" value="500">
+        </div>
+      </div>
+      <div style="margin-top: 14px; text-align: right;">
+        <button class="btn btn-primary" onclick="saveModelParams()">Guardar parametros</button>
+      </div>
+    </div>
+
+    <!-- Prompt versions -->
+    <div class="section">
+      <h2>Historial de prompts</h2>
+      <p class="desc">Versiones anteriores del system prompt. Restaurar una version la carga en el editor de Personalidad.</p>
+      <ul class="version-list" id="versionList">
+        <li style="color: var(--wa-text-secondary); font-size: 13px; padding: 10px 0;">Sin versiones guardadas aun.</li>
+      </ul>
+    </div>
+
+    <!-- Test cases -->
+    <div class="section">
+      <h2>Casos de prueba</h2>
+      <p class="desc">Definir casos para evaluar las respuestas del agente. Ejecutar todos o uno por uno.</p>
+
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="llmJudgeToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Usar LLM como juez (evalua tono y calidad)</span>
+      </div>
+
+      <div class="eval-summary" id="evalSummary" style="display:none;">
+        <span>Pasaron: <span class="stat green" id="evalPassCount">0</span></span>
+        <span>Fallaron: <span class="stat red" id="evalFailCount">0</span></span>
+        <span>Total: <span class="stat" id="evalTotalCount">0</span></span>
+      </div>
+
+      <button class="btn btn-primary" onclick="runAllEvals()" id="btnRunEvals">Ejecutar todos</button>
+
+      <div style="margin-top: 16px; overflow-x: auto;">
+        <table class="eval-table" id="evalTable">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>Nombre</th>
+              <th>Mensaje</th>
+              <th style="width:80px;">Estado</th>
+              <th style="width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody id="evalBody">
+            <tr><td colspan="5" style="text-align:center; color: var(--wa-text-secondary);">Cargando casos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add test case form -->
+      <div class="tc-form" style="margin-top: 24px; border-top: 1px solid var(--wa-border); padding-top: 16px;">
+        <h2 style="font-size: 14px; margin-bottom: 12px;">Agregar caso de prueba</h2>
+        <div class="form-row vertical" style="gap: 10px;">
+          <div>
+            <label>Nombre</label>
+            <input type="text" id="tcName" placeholder="Ej: Pregunta sobre creatina">
+          </div>
+          <div>
+            <label>Mensaje del usuario</label>
+            <input type="text" id="tcMessage" placeholder="Ej: Hola, tienen creatina?">
+          </div>
+          <div>
+            <label>Reglas esperadas</label>
+            <div class="tc-behaviors" id="tcBehaviors">
+              <div class="tc-behavior-row">
+                <select><option value="must_contain">must_contain</option><option value="must_not_contain">must_not_contain</option></select>
+                <input type="text" placeholder="Texto esperado">
+                <button class="btn-icon" onclick="removeBehaviorRow(this)" title="Eliminar">&times;</button>
+              </div>
+            </div>
+            <button class="btn-sm" onclick="addBehaviorRow()" style="margin-top: 6px;">+ Agregar regla</button>
+          </div>
+          <div>
+            <label>Tags (separados por coma)</label>
+            <input type="text" id="tcTags" placeholder="Ej: productos, stock">
+          </div>
+          <div style="text-align: right;">
+            <button class="btn btn-primary" onclick="addTestCase()">Guardar caso</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -896,15 +1389,18 @@ async function loadDocuments() {
     }
 
     list.innerHTML = docs.map(d => `
-      <li class="doc-item">
-        <div class="doc-info">
+      <li class="doc-item" style="flex-wrap: wrap;">
+        <div class="doc-info" style="flex:1;">
           <div class="doc-icon">${TYPE_ICONS[d.doc_type] || '\u{1F4C4}'}</div>
           <div class="doc-meta">
             <div class="name">${escapeHtml(d.filename)}</div>
-            <div class="detail">${TYPE_LABELS[d.doc_type] || d.doc_type} &middot; ${d.chunk_count} fragmentos</div>
+            <div class="detail">${TYPE_LABELS[d.doc_type] || d.doc_type} &middot; ${d.chunk_count} fragmentos &middot; cat: ${escapeHtml(d.category || '-')} &middot; pri: ${d.priority ?? 3}</div>
           </div>
         </div>
-        <button class="btn btn-danger" onclick="deleteDoc('${d.id}')">Eliminar</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" onclick="editDocMeta('${d.id}','${escapeHtml(d.category || '')}',${d.priority ?? 3})">Editar</button>
+          <button class="btn btn-danger" onclick="deleteDoc('${d.id}')">Eliminar</button>
+        </div>
       </li>
     `).join('');
   } catch (e) {
@@ -916,6 +1412,497 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// --- MODEL PARAMS ---
+async function loadModelParams() {
+  try {
+    const res = await fetch('/api/config/model-params');
+    const data = await res.json();
+    const sel = document.getElementById('modelSelect');
+    const opts = Array.from(sel.options).map(o => o.value);
+    if (opts.includes(data.model)) {
+      sel.value = data.model;
+    } else {
+      sel.value = 'custom';
+      document.getElementById('customModelWrap').style.display = '';
+      document.getElementById('customModel').value = data.model;
+    }
+    document.getElementById('tempSlider').value = data.temperature;
+    document.getElementById('tempValue').textContent = data.temperature;
+    document.getElementById('maxTokensInput').value = data.max_tokens;
+  } catch (e) {
+    console.error('Failed to load model params:', e);
+  }
+}
+
+document.getElementById('modelSelect').addEventListener('change', function() {
+  document.getElementById('customModelWrap').style.display = this.value === 'custom' ? '' : 'none';
+});
+
+document.getElementById('tempSlider').addEventListener('input', function() {
+  document.getElementById('tempValue').textContent = this.value;
+});
+
+async function saveModelParams() {
+  const sel = document.getElementById('modelSelect');
+  const model = sel.value === 'custom' ? document.getElementById('customModel').value.trim() : sel.value;
+  if (!model) return showToast('Ingresa un modelo', 'error');
+
+  const temperature = parseFloat(document.getElementById('tempSlider').value);
+  const max_tokens = parseInt(document.getElementById('maxTokensInput').value);
+
+  try {
+    const res = await fetch('/api/config/model-params', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, temperature, max_tokens }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Error'); }
+    showToast('Parametros del modelo guardados');
+  } catch (e) {
+    showToast(e.message || 'Error al guardar parametros', 'error');
+  }
+}
+
+// --- PROMPT VERSIONS ---
+async function loadPromptVersions() {
+  try {
+    const res = await fetch('/api/config/prompt-versions');
+    const versions = await res.json();
+    const list = document.getElementById('versionList');
+
+    if (!versions.length) {
+      list.innerHTML = '<li style="color: var(--wa-text-secondary); font-size: 13px; padding: 10px 0;">Sin versiones guardadas aun.</li>';
+      return;
+    }
+
+    list.innerHTML = versions.map((v, i) => {
+      const preview = (v.prompt_text || '').substring(0, 80).replace(/</g, '&lt;');
+      const time = new Date(v.timestamp).toLocaleString('es-AR');
+      return `
+        <li class="version-item">
+          <div class="version-info">
+            <div class="version-time">${time}</div>
+            <div class="version-preview">${preview}...</div>
+          </div>
+          <button class="btn-sm" onclick="restoreVersion(${i})">Restaurar</button>
+        </li>`;
+    }).join('');
+  } catch (e) {
+    console.error('Failed to load versions:', e);
+  }
+}
+
+async function restoreVersion(index) {
+  try {
+    const res = await fetch(`/api/config/prompt-versions/${index}/restore`, { method: 'POST' });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    document.getElementById('systemPrompt').value = data.system_prompt;
+    originalPrompt = data.system_prompt;
+    updatePromptStatus();
+    switchTab('personalidad');
+    showToast('Version restaurada y aplicada');
+  } catch (e) {
+    showToast('Error al restaurar', 'error');
+  }
+}
+
+// --- TRAINING MATERIALS ---
+async function loadTrainingMaterials() {
+  try {
+    const res = await fetch('/api/training/materials');
+    const files = await res.json();
+    const container = document.getElementById('trainingMaterials');
+    const btn = document.getElementById('btnImportTraining');
+
+    if (!files.length) {
+      container.innerHTML = '<p style="color: var(--wa-text-secondary); font-size: 13px;">No hay archivos en training/. Agrega archivos a la carpeta training/ y recarga.</p>';
+      btn.disabled = true;
+      return;
+    }
+
+    container.innerHTML = files.map(f => `
+      <label style="display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; cursor: pointer;">
+        <input type="checkbox" value="${escapeHtml(f.path)}" class="training-file-cb" ${f.imported ? 'disabled' : ''}>
+        <span>${escapeHtml(f.path)}</span>
+        <span style="color: var(--wa-text-secondary); font-size: 11px;">(${f.type})</span>
+        ${f.imported ? '<span style="color: var(--wa-green); font-size: 11px;">importado</span>' : ''}
+      </label>
+    `).join('');
+    btn.disabled = false;
+  } catch (e) {
+    document.getElementById('trainingMaterials').innerHTML = '<p style="color: var(--wa-text-secondary); font-size: 13px;">No se pudo cargar materiales de training.</p>';
+  }
+}
+
+async function importSelectedTraining() {
+  const checked = document.querySelectorAll('.training-file-cb:checked');
+  const paths = Array.from(checked).map(cb => cb.value);
+  if (!paths.length) return showToast('Selecciona al menos un archivo', 'error');
+
+  try {
+    const res = await fetch('/api/training/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths }),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    showToast(`Importados ${data.imported} archivos`);
+    loadTrainingMaterials();
+    loadDocuments();
+  } catch (e) {
+    showToast('Error al importar', 'error');
+  }
+}
+
+// --- EVALUATIONS ---
+let evalResults = {};
+
+async function loadTestCases() {
+  try {
+    const res = await fetch('/api/evaluations/test-cases');
+    const cases = await res.json();
+    renderTestCases(cases);
+  } catch (e) {
+    console.error('Failed to load test cases:', e);
+  }
+}
+
+function renderTestCases(cases) {
+  const body = document.getElementById('evalBody');
+  if (!cases.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--wa-text-secondary);">No hay casos de prueba. Agrega uno abajo o crea training/evaluaciones/test-cases.yaml</td></tr>';
+    return;
+  }
+
+  body.innerHTML = cases.map((tc, i) => {
+    const result = evalResults[tc.id];
+    let statusBadge = '<span class="badge pending">-</span>';
+    if (result) {
+      statusBadge = result.passed
+        ? '<span class="badge pass">PASS</span>'
+        : '<span class="badge fail">FAIL</span>';
+    }
+
+    let detailHtml = '';
+    if (result) {
+      let lines = [`Respuesta: ${result.reply}`];
+      if (result.checks) {
+        lines.push('');
+        result.checks.forEach(c => {
+          lines.push(`${c.passed ? 'OK' : 'FAIL'}: ${c.rule}`);
+        });
+      }
+      if (result.llm_judge) {
+        lines.push('');
+        lines.push(`LLM Judge: ${result.llm_judge.score}/5 - ${result.llm_judge.reason}`);
+      }
+      detailHtml = `<tr class="eval-detail-row" id="detail-${tc.id}"><td colspan="5"><div class="eval-detail open">${escapeHtml(lines.join('\n'))}</div></td></tr>`;
+    }
+
+    return `
+      <tr>
+        <td>${tc.id}</td>
+        <td>${escapeHtml(tc.name)}</td>
+        <td style="font-size:12px;color:var(--wa-text-secondary);">${escapeHtml(tc.user_message).substring(0, 60)}</td>
+        <td>${statusBadge}</td>
+        <td><button class="btn-sm" onclick="runSingleEval('${tc.id}')">Ejecutar</button></td>
+      </tr>
+      ${detailHtml}`;
+  }).join('');
+}
+
+async function runAllEvals() {
+  const btn = document.getElementById('btnRunEvals');
+  btn.disabled = true;
+  btn.textContent = 'Ejecutando...';
+
+  const useLlm = document.getElementById('llmJudgeToggle').checked;
+  try {
+    const res = await fetch('/api/evaluations/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ use_llm_judge: useLlm }),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    evalResults = {};
+    (data.results || []).forEach(r => { evalResults[r.test_id] = r; });
+
+    document.getElementById('evalSummary').style.display = 'flex';
+    document.getElementById('evalPassCount').textContent = data.passed || 0;
+    document.getElementById('evalFailCount').textContent = data.failed || 0;
+    document.getElementById('evalTotalCount').textContent = data.total || 0;
+
+    loadTestCases();
+    showToast(`Evaluacion completa: ${data.passed}/${data.total} pasaron`);
+  } catch (e) {
+    showToast('Error al ejecutar evaluaciones', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Ejecutar todos';
+}
+
+async function runSingleEval(testId) {
+  const useLlm = document.getElementById('llmJudgeToggle').checked;
+  try {
+    const res = await fetch(`/api/evaluations/run/${testId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ use_llm_judge: useLlm }),
+    });
+    if (!res.ok) throw new Error();
+    const result = await res.json();
+    evalResults[testId] = result;
+    loadTestCases();
+    showToast(result.passed ? 'PASS' : 'FAIL');
+  } catch (e) {
+    showToast('Error al ejecutar', 'error');
+  }
+}
+
+// --- ADD TEST CASE ---
+function addBehaviorRow() {
+  const container = document.getElementById('tcBehaviors');
+  const row = document.createElement('div');
+  row.className = 'tc-behavior-row';
+  row.innerHTML = `
+    <select><option value="must_contain">must_contain</option><option value="must_not_contain">must_not_contain</option></select>
+    <input type="text" placeholder="Texto esperado">
+    <button class="btn-icon" onclick="removeBehaviorRow(this)" title="Eliminar">&times;</button>`;
+  container.appendChild(row);
+}
+
+function removeBehaviorRow(btn) {
+  const container = document.getElementById('tcBehaviors');
+  if (container.children.length > 1) btn.parentElement.remove();
+}
+
+async function addTestCase() {
+  const name = document.getElementById('tcName').value.trim();
+  const message = document.getElementById('tcMessage').value.trim();
+  const tags = document.getElementById('tcTags').value.trim().split(',').map(t => t.trim()).filter(Boolean);
+
+  if (!name || !message) return showToast('Completa nombre y mensaje', 'error');
+
+  const behaviors = [];
+  document.querySelectorAll('#tcBehaviors .tc-behavior-row').forEach(row => {
+    const type = row.querySelector('select').value;
+    const val = row.querySelector('input').value.trim();
+    if (val) behaviors.push(`${type}: ${val}`);
+  });
+
+  if (!behaviors.length) return showToast('Agrega al menos una regla', 'error');
+
+  try {
+    const res = await fetch('/api/evaluations/test-cases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, user_message: message, expected_behaviors: behaviors, tags }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Caso de prueba creado');
+    document.getElementById('tcName').value = '';
+    document.getElementById('tcMessage').value = '';
+    document.getElementById('tcTags').value = '';
+    document.getElementById('tcBehaviors').innerHTML = `
+      <div class="tc-behavior-row">
+        <select><option value="must_contain">must_contain</option><option value="must_not_contain">must_not_contain</option></select>
+        <input type="text" placeholder="Texto esperado">
+        <button class="btn-icon" onclick="removeBehaviorRow(this)" title="Eliminar">&times;</button>
+      </div>`;
+    loadTestCases();
+  } catch (e) {
+    showToast('Error al crear caso', 'error');
+  }
+}
+
+// --- PRODUCT IMAGES ---
+async function uploadImage() {
+  const input = document.getElementById('imgInput');
+  const title = document.getElementById('imgTitle').value.trim();
+  const desc = document.getElementById('imgDesc').value.trim();
+  const tags = document.getElementById('imgTags').value.trim();
+
+  if (!input.files.length) return showToast('Selecciona una imagen', 'error');
+  if (!title) return showToast('El titulo es obligatorio', 'error');
+
+  const form = new FormData();
+  form.append('file', input.files[0]);
+  form.append('title', title);
+  form.append('description', desc);
+  form.append('tags', tags);
+
+  try {
+    const res = await fetch('/api/images/upload', { method: 'POST', body: form });
+    if (!res.ok) throw new Error();
+    showToast('Imagen subida y registrada');
+    input.value = '';
+    document.getElementById('imgLabel').textContent = 'Seleccionar imagen...';
+    document.getElementById('imgLabel').classList.remove('has-file');
+    document.getElementById('imgTitle').value = '';
+    document.getElementById('imgDesc').value = '';
+    document.getElementById('imgTags').value = '';
+    loadImages();
+    loadDocuments();
+  } catch (e) {
+    showToast('Error al subir imagen', 'error');
+  }
+}
+
+async function loadImages() {
+  try {
+    const res = await fetch('/api/images');
+    const imgs = await res.json();
+    const gallery = document.getElementById('imgGallery');
+
+    if (!imgs.length) {
+      gallery.innerHTML = '<p style="color: var(--wa-text-secondary); font-size: 13px; grid-column: 1/-1;">No hay imagenes. Subi una para que Nico la pueda enviar.</p>';
+      return;
+    }
+
+    gallery.innerHTML = imgs.map(img => `
+      <div class="img-card">
+        <img class="thumb" src="/images/${escapeHtml(img.filename)}" alt="${escapeHtml(img.title)}" onclick="window.open('/images/${escapeHtml(img.filename)}','_blank')">
+        <div class="img-info">
+          <div class="img-title">${escapeHtml(img.title)}</div>
+          <div class="img-desc">${escapeHtml(img.description || img.tags || '')}</div>
+        </div>
+        <div class="img-actions">
+          <button class="btn btn-danger" onclick="deleteImage('${img.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load images:', e);
+  }
+}
+
+async function deleteImage(imageId) {
+  if (!confirm('Eliminar esta imagen?')) return;
+  try {
+    const res = await fetch(`/api/images/${imageId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    showToast('Imagen eliminada');
+    loadImages();
+    loadDocuments();
+  } catch (e) {
+    showToast('Error al eliminar imagen', 'error');
+  }
+}
+
+// --- DOCUMENT METADATA ---
+async function editDocMeta(docId, currentCat, currentPri) {
+  const cat = prompt('Categoria (producto, faq, politica, ejemplo-conversacion, template-empleada):', currentCat);
+  if (cat === null) return;
+  const priStr = prompt('Prioridad (1-5, mayor = mas relevante):', String(currentPri));
+  if (priStr === null) return;
+  const pri = parseInt(priStr);
+  if (isNaN(pri) || pri < 1 || pri > 5) return showToast('Prioridad debe ser 1-5', 'error');
+
+  try {
+    const res = await fetch(`/api/knowledge/documents/${docId}/metadata`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: cat, priority: pri }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Metadata actualizada');
+    loadDocuments();
+  } catch (e) {
+    showToast('Error al actualizar metadata', 'error');
+  }
+}
+
+// --- SESSION TIMEOUT ---
+async function loadSessionTimeout() {
+  try {
+    const res = await fetch('/api/config/session-timeout');
+    const data = await res.json();
+    document.getElementById('sessionTimeout').value = data.timeout_minutes || 120;
+  } catch (e) {
+    console.error('Failed to load session timeout:', e);
+  }
+}
+
+async function saveSessionTimeout() {
+  const minutes = parseInt(document.getElementById('sessionTimeout').value) || 120;
+  try {
+    const res = await fetch('/api/config/session-timeout', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timeout_minutes: minutes }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Timeout de sesion guardado');
+  } catch (e) {
+    showToast('Error al guardar timeout', 'error');
+  }
+}
+
+// --- FIXED GREETING ---
+let greetingPatterns = [];
+
+async function loadGreetingConfig() {
+  try {
+    const res = await fetch('/api/config/greeting');
+    const data = await res.json();
+    document.getElementById('greetingEnabled').checked = data.enabled;
+    document.getElementById('greetingText').value = data.text || '';
+    greetingPatterns = data.patterns || [];
+    renderGreetingPatterns();
+  } catch (e) {
+    console.error('Failed to load greeting config:', e);
+  }
+}
+
+async function saveGreetingConfig() {
+  const enabled = document.getElementById('greetingEnabled').checked;
+  const text = document.getElementById('greetingText').value;
+  try {
+    const res = await fetch('/api/config/greeting', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled, text, patterns: greetingPatterns }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Saludo fijo guardado');
+  } catch (e) {
+    showToast('Error al guardar saludo', 'error');
+  }
+}
+
+function addGreetingPattern() {
+  const input = document.getElementById('greetingPatternInput');
+  const val = input.value.trim();
+  if (!val) return;
+  // Support comma-separated input
+  val.split(',').forEach(p => {
+    const clean = p.trim().toLowerCase();
+    if (clean && !greetingPatterns.includes(clean)) greetingPatterns.push(clean);
+  });
+  input.value = '';
+  renderGreetingPatterns();
+}
+
+function removeGreetingPattern(idx) {
+  greetingPatterns.splice(idx, 1);
+  renderGreetingPatterns();
+}
+
+function renderGreetingPatterns() {
+  const container = document.getElementById('greetingPatterns');
+  if (!greetingPatterns.length) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = greetingPatterns.map((p, i) =>
+    `<span class="greeting-chip">${escapeHtml(p)}<button onclick="removeGreetingPattern(${i})">&times;</button></span>`
+  ).join('');
 }
 
 // --- CONVERSATIONS TAB ---
@@ -1125,7 +2112,14 @@ function stopConvPolling() {
 document.getElementById('systemPrompt').addEventListener('input', updatePromptStatus);
 loadPrompt();
 loadDefaultPromptContext();
+loadSessionTimeout();
+loadGreetingConfig();
 loadDocuments();
+loadImages();
+loadModelParams();
+loadPromptVersions();
+loadTrainingMaterials();
+loadTestCases();
 
 // Start pending handoffs polling (always active)
 pollPendingHandoffs();

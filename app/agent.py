@@ -17,6 +17,11 @@ class WhatsAppAgent:
         self.temperature = self.agent_config.get("temperature", 0.7)
         self.max_tokens = self.agent_config.get("max_tokens", 500)
 
+    def update_params(self, model: str, temperature: float, max_tokens: int) -> None:
+        self.model = model
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+
     async def chat(
         self,
         history: list[ChatMessage],

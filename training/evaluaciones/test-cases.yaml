@@ -1,0 +1,92 @@
+test_cases:
+  - id: "tc-001"
+    name: "Precio creatina"
+    user_message: "¿Cuánto sale la creatina?"
+    expected_behaviors:
+      - "must_contain: 790"
+      - "must_not_contain: no tenemos"
+    tags: ["productos", "precios"]
+
+  - id: "tc-002"
+    name: "Producto farma - enantato"
+    user_message: "¿Tenés enantato?"
+    expected_behaviors:
+      - "must_contain: 2.190"
+      - "must_contain: Mauri"
+    tags: ["productos", "farma", "derivacion"]
+
+  - id: "tc-003"
+    name: "Descuentos vigentes"
+    user_message: "¿Hay algún descuento?"
+    expected_behaviors:
+      - "must_contain: 10%"
+      - "must_contain: 3 productos"
+    tags: ["descuentos"]
+
+  - id: "tc-004"
+    name: "Producto que no existe"
+    user_message: "¿Tenés whey de ON?"
+    expected_behaviors:
+      - "must_contain: consulto"
+      - "must_not_contain: sí tenemos"
+    tags: ["stock-negativo", "derivacion"]
+
+  - id: "tc-005"
+    name: "Objetivo definir"
+    user_message: "Quiero definir, ¿qué me recomendás?"
+    expected_behaviors:
+      - "must_contain: thermo"
+    tags: ["recomendacion", "objetivo"]
+
+  - id: "tc-006"
+    name: "Info de envíos"
+    user_message: "¿Hacen envíos?"
+    expected_behaviors:
+      - "must_contain: Uruguay"
+      - "must_contain: Rivera"
+    tags: ["negocio", "envios"]
+
+  - id: "tc-007"
+    name: "Salud femenina - libido"
+    user_message: "¿Tenés algo para la libido femenina?"
+    expected_behaviors:
+      - "must_contain: libido"
+      - "must_contain: 1.790"
+    tags: ["productos", "femenino"]
+
+  - id: "tc-008"
+    name: "Farmacologia - ciclos debe derivar"
+    user_message: "Quiero arrancar un ciclo de testosterona, me decís cómo?"
+    expected_behaviors:
+      - "must_contain: Mauri"
+      - "must_not_contain: dosis"
+    tags: ["derivacion", "farmacologia"]
+
+  - id: "tc-009"
+    name: "Precio proteina whey"
+    user_message: "¿Cuánto sale la proteína más barata?"
+    expected_behaviors:
+      - "must_contain: 1.290"
+    tags: ["productos", "precios"]
+
+  - id: "tc-010"
+    name: "Quiere comprar - derivar a Mauri"
+    user_message: "Dale, quiero la oxandrolona. ¿Cómo hago para comprar?"
+    expected_behaviors:
+      - "must_contain: Mauri"
+    tags: ["derivacion", "cierre"]
+
+  - id: "tc-011"
+    name: "Bajar de peso"
+    user_message: "Quiero bajar de peso, ¿qué tienen?"
+    expected_behaviors:
+      - "must_contain: Thermo"
+    tags: ["recomendacion", "objetivo"]
+
+  - id: "tc-012"
+    name: "Formas de pago"
+    user_message: "¿Qué formas de pago aceptan?"
+    expected_behaviors:
+      - "must_contain: Prex"
+      - "must_contain: Mercado Pago"
+    tags: ["negocio", "pagos"]

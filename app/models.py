@@ -23,10 +23,14 @@ class ChatSession(BaseModel):
     handoff_reason: str = ""
     handoff_at: str = ""
     is_simulation: bool = False
+    last_activity: str = ""
 
     def model_post_init(self, __context):
+        now = datetime.now().isoformat()
         if not self.created_at:
-            self.created_at = datetime.now().isoformat()
+            self.created_at = now
+        if not self.last_activity:
+            self.last_activity = now
 
 
 class SendMessageRequest(BaseModel):
