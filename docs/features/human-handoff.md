@@ -1,5 +1,7 @@
 # Plan: Human Handoff Feature
 
+**Estado: IMPLEMENTADO**
+
 ## Context
 
 El system prompt de Nico ya menciona "derivar a Mauri" en ciertos casos (farmacologia, reclamos, datos que no tiene), pero no existe ningun mecanismo real para hacerlo. Los mensajes siguen pasando por el LLM siempre. Esta feature implementa el circuito completo: clasificacion de intenciones, handoff configurable por intencion, pausa del bot, interfaz de operador, auto-reset por timeout, y retorno al bot.
