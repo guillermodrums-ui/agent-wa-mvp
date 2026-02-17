@@ -4,24 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements + pharmaceuticals). The agent **"Nico"** handles customer inquiries via WhatsApp (Evolution API) and a web-based simulator. Built with Python/FastAPI, OpenRouter (DeepSeek) for LLM, ChromaDB for RAG. Maintains **Argentine Spanish** dialect in all prompts and user-facing text.
+WhatsApp chatbot agent MVP for **La Fórmula** (personal training + sports supplements + pharmaceuticals). The agent is called **"Nico"** and communicates in **Argentine Spanish**. Built with Python/FastAPI, uses OpenRouter (DeepSeek model) for LLM calls, and ChromaDB for RAG-based knowledge retrieval. Maintain Argentine Spanish dialect in any prompt or user-facing text changes.
 
 ## Commands
 
-### Run with Docker (recommended — starts all 3 services)
+### Run with Docker (recommended)
 ```bash
 docker compose up --build
-# Agent: http://localhost:7070  |  Admin: http://localhost:7070/admin
-# Evolution API: http://localhost:8080
+# Chat UI: http://localhost:7070
+# Admin panel: http://localhost:7070/admin
 ```
 
-### Run locally (agent only, no WhatsApp)
+### Run locally
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 7070
 ```
 
-Requires `.env` with at minimum `OPENROUTER_API_KEY` and `CLIENT_CONFIG_PATH=config/config.yaml` (see `.env.example`).
+Requires `.env` with `OPENROUTER_API_KEY` (see `.env.example`).
 
 ### Import catalog to RAG (with server running)
 ```bash
@@ -39,13 +39,6 @@ Via admin panel (Entrenamiento tab) or `POST /api/evaluations/run`.
 ### No automated test framework configured yet
 
 ## Architecture
-
-### Two Message Paths
-
-1. **Simulator** (web UI): `POST /api/chat` → session lookup → RAG search → LLM call → response returned to browser
-2. **WhatsApp** (real): Evolution API webhook → `POST /api/webhooks/evolution` → parse + dedup → get/create session by phone → RAG + LLM → send reply back via Evolution API
-
-Both paths share the same agent (`WhatsAppAgent.chat()`), knowledge base, and session store.
 
 ### Module Responsibilities
 
@@ -70,12 +63,12 @@ Both paths share the same agent (`WhatsAppAgent.chat()`), knowledge base, and se
 6. Agent builds message array: system prompt → session context → RAG context → history → user message
 7. Async POST to OpenRouter API
 8. Image marker post-processing (`[IMAGEN: ...]` → resolved URLs)
-9. `[HANDOFF]` tag detection — if present, set session to `handoff_pending`
+9. `[HANDOFF]` tag detection — if present anywhere in reply, remove it and set session to `handoff_pending`
 10. Response saved to session and returned with optional debug info
 
 ### Human Handoff
 
-Sessions have a `mode` field: `bot` | `handoff_pending` | `human`. The agent triggers handoff by prefixing its reply with `[HANDOFF]`. Operators manage handoffs via the Conversaciones tab in admin:
+Sessions have a `mode` field: `bot` | `handoff_pending` | `human`. The agent triggers handoff by including `[HANDOFF]` at the end of its reply (the tag is stripped before sending to the client). Operators manage handoffs via the Conversaciones tab in admin:
 - `POST /api/sessions/{id}/handoff` — change mode (handoff_pending/human/bot)
 - `POST /api/sessions/{id}/reply` — send operator message (source="human")
 - `GET /api/handoffs/pending` — list sessions awaiting operator
@@ -90,7 +83,7 @@ Two vanilla HTML/JS/CSS pages (no build step):
 - **`app/static/index.html`** — WhatsApp-style chat UI with session sidebar, debug panel per message, handoff banner
 - **`app/static/admin.html`** — 4 tabs: Personalidad (prompt editor + versions), Conocimiento (KB docs + training import + images), Entrenamiento (model params + test cases + eval runner + introspection), Conversaciones (handoff management with operator reply)
 
-## Docker Setup
+### Data Persistence
 
 | Storage | Location | Survives restart |
 |---------|----------|-----------------|
@@ -102,10 +95,7 @@ Two vanilla HTML/JS/CSS pages (no build step):
 
 ### Docker
 
-Three services in `docker-compose.yml`:
-- **`agent`** (port 7070) — this app, with hot-reload volumes for `app/`, `config/`, `data/`, `training/`
-- **`evolution-api`** (port 8080) — `evoapicloud/evolution-api:v2.3.7` with PostgreSQL + Prisma. Sends webhooks to `http://agent:7070/api/webhooks/evolution`
-- **`postgres`** (5432) — backing store for Evolution API only
+Single service on port 7070. Mounts `app/`, `config/`, `data/`, `training/` as volumes for hot-reload and persistence.
 
 ## Environment Variables
 
@@ -113,12 +103,9 @@ Three services in `docker-compose.yml`:
 |---|---|---|---|
 | `OPENROUTER_API_KEY` | Yes | — | OpenRouter API key |
 | `CLIENT_CONFIG_PATH` | No | `config/config.yaml` | Business config path |
-| `EVOLUTION_API_URL` | For WhatsApp | — | Evolution API base URL (e.g. `http://evolution-api:8080`) |
-| `EVOLUTION_API_KEY` | For WhatsApp | — | Evolution API authentication key |
-| `EVOLUTION_INSTANCE_NAME` | No | `laformula` | Instance name |
 | `PORT` | No | `7070` | Server port |
 
-## Data Persistence
+## Key Design Decisions
 
 - **Configuration-driven**: Business logic, personality, products all in YAML — same codebase serves different clients.
 - **RAG with priority re-ranking**: Documents have `category` + `priority` (1-5) metadata. Higher priority docs score higher in retrieval.
